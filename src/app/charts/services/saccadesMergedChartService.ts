@@ -16,28 +16,28 @@ export class SaccadesMergedChartService extends ChartService {
     }
     //Promise ask
     public addData(frames: ICamMessage[]): Promise<ICamMessage[]> {
+        return new Promise((resolve, reject) => {
+            frames = this.puk(frames);
+            console.log(frames)
+            resolve(frames);
+        });
+    }
+    private puk(frames: ICamMessage[]) {
         frames.forEach((frame, index) => {
-            frame.seconds = this.sharedService.convertTimestampToSeconds(frame.timestamp);
+        frame.seconds = this.sharedService.convertTimestampToSeconds(frame.timestamp);
+          console.log(frame.seconds)
+        frame.pointX = frame.seconds - 1652269955943;
 
-            frame.pointX = index == 0
-              ? 0
-              : frame.seconds - frames[0].seconds;
-
-            frame.target = frame.targetType == 0
-              ? LEFT_EYE
-              : RIGHT_EYE;
+        frame.target = frame.targetType == 0
+            ? LEFT_EYE
+            : RIGHT_EYE;
         });
 
         frames = this.removeZeroElements(frames);
-        frames.shift();
-        frames.pop();
 
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                resolve(frames);
-            }, 100);
-        });
+        return frames;
     }
+
     public setCamData(frames: ICamMessage[]): void {
         throw new Error('Method not implemented.');
     }
