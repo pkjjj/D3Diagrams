@@ -8,6 +8,7 @@ export interface ICamMessage {
     exitType?: number;
     metadata?: string;
     target?: string; // OS/OD !! targettype
+    targetType?: number; // OD -  0 | OS - 1
     measurement?: number; // диаметр зрачка в Пьюпл тесте
     backgroundColor?: number; // цвет фона
     numtest?: number; // порядковый номер теста
@@ -26,6 +27,9 @@ export interface ICamMessage {
     redDotIndex?: number;
     stage?: number;
     trial?: number;
+    pointX?: number;
+    pointY?: number;
+    seconds?: number; // сколько прошло миллисекунд
     seen?: number;
     velocity?: number;
     direction?: number;
