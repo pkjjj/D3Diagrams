@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
-import { BehaviorSubject, Subscription } from 'rxjs';
+import { BehaviorSubject, first, Subscription } from 'rxjs';
 import { IChartEdit } from '../../components/haploChart.component';
 import { ICamMessage } from '../../models/charts.model';
 import { SaccadesMergedChartService } from '../../services/saccadesMergedChartService';
@@ -50,32 +50,14 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
     public yAxisDistance;
     public yAxisAngle;
     public lineGroup;
-    public line;
-    public dataSubject: BehaviorSubject<ICamMessage[]> = new BehaviorSubject<ICamMessage[]>(null);
+    public lastPoint: [number, number][] = [];
     // чартсервис - сервис в котором должна быть реализована вся бизнес-логикаа
     constructor(public chartService: SaccadesMergedChartService, private requestService: RequestService) {
         super();
     }
     // в этом хуке активируются все нужные подписки
     ngOnInit(): void {
-        this.requestService.getMemoryData()
-          .subscribe(data => {
-              this.jsonTestsResult = this.parseStringToJson(data);
-              this.frames = this.jsonTestsResult;
-              this.frames.shift();
-              this.frames.pop();
 
-              this.chartService.addData(this.frames)
-                  .then(frames => {
-                      this.initializeChart(frames);
-                  });
-
-              const interval = setInterval(() => {
-                  this.frames.length !== 0
-                  ? this.getPointsForChart(100)
-                  : clearInterval(interval);
-              }, 100);
-          });
     }
     // в этом хуке СВГ уже инициализирован. можно начинать рисовать
     ngAfterViewInit(): void {}
@@ -83,8 +65,25 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
     ngOnDestroy(): void {
         this.subscriptions.forEach(s => s.unsubscribe());
     }
-    public buildRealTimeChart(chartType: CHART_TYPE) {
+    public buildRealTimeChart() {
+        this.requestService.getMemoryData()
+        .subscribe(data => {
+            this.jsonTestsResult = this.parseStringToJson(data);
+            this.frames = this.jsonTestsResult;
+            this.frames.shift();
+            this.frames.pop();
 
+            this.chartService.addData(this.frames)
+                .then(frames => {
+                    this.initializeChart(frames);
+                });
+
+            const interval = setInterval(() => {
+                this.frames.length !== 0
+                ? this.getPointsForChart(100)
+                : clearInterval(interval);
+            }, 100);
+        });
     }
     public buildRecordedChart(chartType: CHART_TYPE) {
 
@@ -93,14 +92,14 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
 
     }
     private getPointsForChart(framesCount: number) {
-      this.chartService.addData(this.frames.slice(0 + this.counter, framesCount + this.counter))
+      this.chartService.addData(this.frames.splice(0, framesCount))
         .then(frames => {
-            this.data = this.data === null
-            ? frames
-            : this.data.concat(frames);
+            // this.data = this.data === null
+            // ? frames
+            // : this.data.concat(frames);
 
-            this.drawPoints(this.data);
-            this.counter += 100;
+            console.log("trigger")
+            this.drawPoints(frames);
         });
     }
     //make static
@@ -159,6 +158,8 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
         //   .style('fill', 'none')
         //   .style('stroke', 'red')
         //   .style('stroke-width', '2px');
+        this.svgInner
+        .append('g')
 
         this.width = this.svgp.nativeElement.getBoundingClientRect().width;
 
@@ -185,13 +186,29 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
           .y(d => d[1])
           .curve(d3.curveMonotoneX);
 
+        if (this.lastPoint.length != 0) {
+            const firstTime: [number, number] = [this.xScale(data[0].pointX), this.yScale(data[0].pointY)]
+            this.lastPoint.push(firstTime);
+        }
+
+        this.svgInner
+        .append('path')
+        .attr('id', 'line')
+        .attr('d', line(this.lastPoint))
+        .style('fill', 'none')
+        .style('stroke', 'red')
+        .style('stroke-width', '2px');
+
+        this.lastPoint = [];
+
         const points: [number, number][] = data.map(d => [
           this.xScale(d.pointX),
           this.yScale(d.pointY),
         ]);
 
+        this.lastPoint.push(points[data.length - 1]);
+
         this.svgInner
-        .append('g')
         .append('path')
         .attr('id', 'line')
         .attr('d', line(points))

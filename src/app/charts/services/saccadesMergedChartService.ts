@@ -11,28 +11,29 @@ import { LEFT_EYE, RIGHT_EYE } from '../constants/constants';
 
 @Injectable()
 export class SaccadesMergedChartService extends ChartService {
+    private firstTimestamp: number;
     constructor(private sharedService: SharedService) {
         super();
     }
     //Promise ask
     public addData(frames: ICamMessage[]): Promise<ICamMessage[]> {
         return new Promise((resolve, reject) => {
-            frames = this.puk(frames);
-            console.log(frames)
+            frames = this.parseFrames(frames);
             resolve(frames);
         });
     }
-    private puk(frames: ICamMessage[]) {
+    private parseFrames(frames: ICamMessage[]) {
         frames.forEach((frame, index) => {
         frame.seconds = this.sharedService.convertTimestampToSeconds(frame.timestamp);
-          console.log(frame.seconds)
-        frame.pointX = frame.seconds - 1652269955943;
+
+        this.firstTimestamp = this.firstTimestamp ?? frame.seconds;
+        frame.pointX = frame.seconds - this.firstTimestamp;
 
         frame.target = frame.targetType == 0
             ? LEFT_EYE
             : RIGHT_EYE;
         });
-
+        
         frames = this.removeZeroElements(frames);
 
         return frames;
