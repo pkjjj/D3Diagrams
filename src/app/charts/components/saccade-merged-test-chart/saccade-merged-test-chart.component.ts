@@ -15,11 +15,13 @@ import { RANGE_OF_ANGLES, START_OF_AXIS_X } from '../../constants/constants';
 import { RequestService } from '../../services/request.service';
 
 export enum CHART_TYPE {
-  VELOCTIY,
-  MOVEMENT
+    VELOCTIY,
+    MOVEMENT
 }
-export class timestamp {
-  firstTimestamp: number
+
+export interface Line {
+    id: string,
+    color: string
 }
 
 @Component({
@@ -37,7 +39,6 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
     private width = 700;
     private height = 700;
     private margin = 50;
-    private counter = 0;
 
     public frames: ICamMessage[];
     public data: ICamMessage[] = null;
@@ -51,13 +52,23 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
     public yAxisAngle;
     public lineGroup;
     public lastPoint: [number, number][] = [];
+    public line: {  };
+    public amountGreenDots: number;
     // чартсервис - сервис в котором должна быть реализована вся бизнес-логикаа
     constructor(public chartService: SaccadesMergedChartService, private requestService: RequestService) {
         super();
     }
     // в этом хуке активируются все нужные подписки
     ngOnInit(): void {
+        this.subscriptions.push(this.requestService.getMemoryData().subscribe());
 
+        this.requestService.getMemoryData()
+        .subscribe(data => {
+            this.jsonTestsResult = this.parseStringToJson(data);
+            this.frames = this.jsonTestsResult;
+            this.frames.shift();
+            this.frames.pop();
+        });
     }
     // в этом хуке СВГ уже инициализирован. можно начинать рисовать
     ngAfterViewInit(): void {}
@@ -65,41 +76,35 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
     ngOnDestroy(): void {
         this.subscriptions.forEach(s => s.unsubscribe());
     }
+    // build real-time chart
     public buildRealTimeChart() {
-        this.requestService.getMemoryData()
-        .subscribe(data => {
-            this.jsonTestsResult = this.parseStringToJson(data);
-            this.frames = this.jsonTestsResult;
-            this.frames.shift();
-            this.frames.pop();
+        this.chartService.addData(this.frames)
+            .then(frames => {
+                this.initializeChart(frames);
+            });
 
-            this.chartService.addData(this.frames)
-                .then(frames => {
-                    this.initializeChart(frames);
-                });
-
-            const interval = setInterval(() => {
-                this.frames.length !== 0
-                ? this.getPointsForChart(100)
-                : clearInterval(interval);
-            }, 100);
-        });
+        const interval = setInterval(() => {
+            this.frames.length !== 0
+            ? this.drawPointsByAmount(100)
+            : clearInterval(interval);
+        }, 100);
     }
-    public buildRecordedChart(chartType: CHART_TYPE) {
+    // build recorded chart
+    public buildRecordedChart() {
+      const parsedFrames = this.chartService.setCamData(this.frames);
 
+      this.initializeChart(parsedFrames);
+      this.drawPoints(parsedFrames);
+      this.drawGreenLines(parsedFrames);
     }
     public clearChart(chartType: CHART_TYPE) {
 
     }
-    private getPointsForChart(framesCount: number) {
+    private drawPointsByAmount(framesCount: number) {
       this.chartService.addData(this.frames.splice(0, framesCount))
         .then(frames => {
-            // this.data = this.data === null
-            // ? frames
-            // : this.data.concat(frames);
-
-            console.log("trigger")
             this.drawPoints(frames);
+            this.drawGreenLine(frames);
         });
     }
     //make static
@@ -124,7 +129,7 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
 
         this.yScale = d3
           .scaleLinear()
-          .domain([d3.max(data, d => d.pointY) + 1, d3.min(data, d => d.pointY) - 1])
+          .domain([d3.max(data, d => d.pointY), d3.min(data, d => d.pointY)])
           .range([0, this.height - 2 * this.margin]);
 
         this.yScaleAngle = d3
@@ -140,7 +145,7 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
         this.yAxisAngle = this.svgInner
           .append('g')
           .attr('id', 'y-axisAngle')
-          .style('transform', 'translate(' + (this.margin - 30) + 'px,  0)');
+          .style('transform', 'translate(' + (this.margin - 30) + 'px,  0)')
 
         this.xScale = d3
           .scaleLinear()
@@ -149,17 +154,9 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
         this.xAxis = this.svgInner
           .append('g')
           .attr('id', 'x-axis')
-          .style('transform', 'translate(0, ' + this.computeLocationAxisX(data) + 'px)');
+          .style('transform', 'translate(0, ' + (this.height / 2 - this.margin) + 'px)');
 
-        // this.lineGroup = this.svgInner
-        //   .append('g')
-        //   .append('path')
-        //   .attr('id', 'line')
-        //   .style('fill', 'none')
-        //   .style('stroke', 'red')
-        //   .style('stroke-width', '2px');
-        this.svgInner
-        .append('g')
+        this.svgInner.append('g')
 
         this.width = this.svgp.nativeElement.getBoundingClientRect().width;
 
@@ -179,25 +176,13 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
         this.yAxisDistance.call(yAxis);
         this.yAxisAngle.call(yAxisAngle);
     }
-    private drawPoints(data: ICamMessage[]) {
-        const line = d3
-          .line()
-          .x(d => d[0])
-          .y(d => d[1])
-          .curve(d3.curveMonotoneX);
-
+    private drawPoints(data: ICamMessage[]): void {
         if (this.lastPoint.length != 0) {
             const firstTime: [number, number] = [this.xScale(data[0].pointX), this.yScale(data[0].pointY)]
             this.lastPoint.push(firstTime);
         }
 
-        this.svgInner
-        .append('path')
-        .attr('id', 'line')
-        .attr('d', line(this.lastPoint))
-        .style('fill', 'none')
-        .style('stroke', 'red')
-        .style('stroke-width', '2px');
+        this.drawLineOnChart(this.lastPoint, { id: 'line', color: 'red'});
 
         this.lastPoint = [];
 
@@ -208,28 +193,72 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
 
         this.lastPoint.push(points[data.length - 1]);
 
+        this.drawLineOnChart(points, { id: 'line', color: 'red'});
+
+
+
+
+    }
+  private drawGreenLine(data: ICamMessage[]): void {
+    const greenLinePoints: [number, number][] = data.filter(el => el.stage != 3).map(d => [
+      this.xScale(d.pointX),
+      this.yScaleAngle(d.angleGreenDotPointY),
+    ]);
+    this.drawLineOnChart(greenLinePoints, { id: 'greenLine', color: 'green' });
+  }
+
+  private drawGreenLines(data: ICamMessage[]) {
+    let greenDotIndex: number = null;
+    let indexValue = 0;
+
+    data.forEach(frame => {
+      if (frame.greenDotIndex != greenDotIndex) {
+        greenDotIndex = frame.greenDotIndex;
+        indexValue = data.findIndex(el => el.greenDotIndex != greenDotIndex);
+        // const resultArray = data.filter(el => el.stage != 3 && el.greenDotIndex != greenDotIndex);
+        // const lastIndex = resultArray.indexOf(resultArray[resultArray.length - 1]);
+        const greenLinePoints: [number, number][] = data.splice(0, indexValue).filter(el => el.stage != 3).map(d => [
+          this.xScale(d.pointX),
+          this.yScaleAngle(d.angleGreenDotPointY),
+        ]);
+        this.drawLineOnChart(greenLinePoints, { id: 'greenLine', color: 'green' });
+
+        return;
+      }
+    });
+  }
+
+    private drawLineOnChart(points: [number, number][],
+    lineStyle: Line): void {
+        const line = d3
+        .line()
+        .x(d => d[0])
+        .y(d => d[1])
+        .curve(d3.curveMonotoneX);
+
         this.svgInner
-        .append('path')
-        .attr('id', 'line')
-        .attr('d', line(points))
-        .style('fill', 'none')
-        .style('stroke', 'red')
-        .style('stroke-width', '2px');
+          .append('path')
+          .attr('id', lineStyle.id)
+          .attr('d', line(points))
+          .style('fill', 'none')
+          .style('stroke', lineStyle.color)
+          .style('stroke-width', '2px');
     }
     // compute axis X location with scale factor. Axis should be on 274 y point.
-    private computeLocationAxisX(data: ICamMessage[]): number {
-      const values = d3.extent(data, d => d.pointY);
-      const difference = values[1] - values[0];
+    // private computeLocationAxisX(data: ICamMessage[]): number {
+    //   const values = d3.extent(data, d => d.pointY);
+    //   const difference = values[1] - values[0];
 
-      const scaleFactor = difference !== 0
-        ? this.height / difference
-        : 0;
+    //   const scaleFactor = difference !== 0
+    //     ? this.height / difference
+    //     : 0;
 
-      const offsetToBottom = values[1] - START_OF_AXIS_X;
-      const offsetToBottomWithFactor = offsetToBottom * scaleFactor;
+    //   const offsetToBottom = values[1] - START_OF_AXIS_X;
+    //   const offsetToBottomWithFactor = offsetToBottom * scaleFactor;
 
-      return offsetToBottomWithFactor;
-  }
+    //   return offsetToBottomWithFactor;
+    // }
+
     // функция для очистки данных перед загрузкой новых
     public clearData(): void {}
     // пока не парься

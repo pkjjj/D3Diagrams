@@ -18,12 +18,23 @@ export class SaccadesMergedChartService extends ChartService {
     //Promise ask
     public addData(frames: ICamMessage[]): Promise<ICamMessage[]> {
         return new Promise((resolve, reject) => {
-            frames = this.parseFrames(frames);
-            resolve(frames);
+            const parsedFrames = this.parseFrames(frames);
+            resolve(parsedFrames);
         });
+    }
+    public setCamData(frames: ICamMessage[]): ICamMessage[]         {
+        return this.parseFrames(frames);
+    }
+    public export() {
+        throw new Error('Method not implemented.');
+    }
+    public clearData(): void {
+        throw new Error('Method not implemented.');
     }
     private parseFrames(frames: ICamMessage[]) {
         frames.forEach((frame, index) => {
+        frames = this.removeZeroElements(frames);
+
         frame.seconds = this.sharedService.convertTimestampToSeconds(frame.timestamp);
 
         this.firstTimestamp = this.firstTimestamp ?? frame.seconds;
@@ -32,21 +43,27 @@ export class SaccadesMergedChartService extends ChartService {
         frame.target = frame.targetType == 0
             ? LEFT_EYE
             : RIGHT_EYE;
+
+        switch(frame.greenDotIndex) {
+          case 0:
+              frame.angleGreenDotPointY = -10;
+              break;
+          case 1:
+              frame.angleGreenDotPointY = -5;
+              break;
+          case 2:
+              frame.angleGreenDotPointY = 0;
+              break
+          case 3:
+              frame.angleGreenDotPointY = 5;
+              break;
+          case 4:
+              frame.angleGreenDotPointY = 10;
+              break;
+        }
         });
-        
-        frames = this.removeZeroElements(frames);
 
         return frames;
-    }
-
-    public setCamData(frames: ICamMessage[]): void {
-        throw new Error('Method not implemented.');
-    }
-    public export() {
-        throw new Error('Method not implemented.');
-    }
-    public clearData(): void {
-        throw new Error('Method not implemented.');
     }
     // remove elements when patient blinks or maybe it was flash
     private removeZeroElements(frames: ICamMessage[]) {

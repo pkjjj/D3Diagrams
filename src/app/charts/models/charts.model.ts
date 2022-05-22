@@ -30,6 +30,7 @@ export interface ICamMessage {
     pointX?: number;
     pointY?: number;
     seconds?: number; // сколько прошло миллисекунд
+    angleGreenDotPointY?: number;
     seen?: number;
     velocity?: number;
     direction?: number;
