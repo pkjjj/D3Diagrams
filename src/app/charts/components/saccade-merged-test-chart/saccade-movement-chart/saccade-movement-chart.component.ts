@@ -38,7 +38,7 @@ export class SaccadeMovementChartComponent implements OnInit {
         this.requestService.getMemoryData()
           .subscribe(data => {
               this.initialFrames = this.sharedService.parseStringToJson(data) as ICamMessage[];
-              this.frames = [ ...this.initialFrames ]; 
+              this.frames = [ ...this.initialFrames ];
         });
     }
 
@@ -96,7 +96,7 @@ export class SaccadeMovementChartComponent implements OnInit {
 
       this.yScale = d3
         .scaleLinear()
-        .domain([d3.max(data, d => d.pointY), d3.min(data, d => d.pointY)])
+        .domain([d3.max(data, d => d.pointY + 13), d3.min(data, d => d.pointY)])
         .range([0, this.height - 2 * this.margin]);
 
       this.yScaleAngle = d3
@@ -107,12 +107,13 @@ export class SaccadeMovementChartComponent implements OnInit {
       this.yAxisDistance = this.svgInner
         .append('g')
         .attr('id', 'y-axisDistance')
-        .style('transform', 'translate(' + this.margin + 'px,  0)');
+        .style('transform', 'translate(' + (this.margin) + 'px,  0)')
 
       this.yAxisAngle = this.svgInner
         .append('g')
         .attr('id', 'y-axisAngle')
         .style('transform', 'translate(' + (this.margin - 30) + 'px,  0)')
+        // .style('transform', 'translate(0, ' + (-140) + 'px)');
 
       this.xScale = d3
         .scaleLinear()
@@ -121,11 +122,12 @@ export class SaccadeMovementChartComponent implements OnInit {
       this.xAxis = this.svgInner
         .append('g')
         .attr('id', 'x-axis')
-        .style('transform', 'translate(0, ' + this.computeLocationAxisX(data) + 'px)');
+        .style('transform', 'translate(0, ' + (this.height / 2 - this.margin) + 'px)');
 
       this.svgInner = this.svgInner
         .append('g')
         .attr('id', 'chartPoints')
+        // .style('transform', 'translate(0, ' + (-120) + 'px)');
 
       this.width = this.svgElement.nativeElement
         .getBoundingClientRect()
@@ -173,7 +175,8 @@ export class SaccadeMovementChartComponent implements OnInit {
           this.xScale(d.pointX),
           this.yScaleAngle(d.angleGreenDotPointY),
         ]);
-        this.drawLineOnChart(greenLinePoints, { id: 'line', color: 'green' });//TODO move to const
+        console.log(greenLinePoints)
+        this.drawLineOnChart(greenLinePoints, { id: 'line', color: 'green' });
     }
 
     private drawGreenLines(data: ICamMessage[]) {
@@ -181,20 +184,20 @@ export class SaccadeMovementChartComponent implements OnInit {
         let indexValue = 0;
 
         data.forEach(frame => {
-          if (frame.greenDotIndex != greenDotIndex) {
-            greenDotIndex = frame.greenDotIndex;
-            indexValue = data.findIndex(el => el.greenDotIndex != greenDotIndex);
+            if (frame.greenDotIndex != greenDotIndex) {
+              greenDotIndex = frame.greenDotIndex;
+              indexValue = data.findIndex(el => el.greenDotIndex != greenDotIndex);
 
-            const greenLinePoints: [number, number][] = data
-              .splice(0, indexValue)
-              .filter(el => el.stage != LAST_STAGE_WITHOUT_GREEN_POINT)
-              .map(d => [
-                  this.xScale(d.pointX),
-                  this.yScaleAngle(d.angleGreenDotPointY),
-              ]);
+              const greenLinePoints: [number, number][] = data
+                .splice(0, indexValue)
+                .filter(el => el.stage != LAST_STAGE_WITHOUT_GREEN_POINT)
+                .map(d => [
+                    this.xScale(d.pointX),
+                    this.yScaleAngle(d.angleGreenDotPointY),
+                ]);
 
-            this.drawLineOnChart(greenLinePoints, { id: 'greenLine', color: 'green' });
-          }
+              this.drawLineOnChart(greenLinePoints, { id: 'greenLine', color: 'green' });
+            }
         });
     }
 
