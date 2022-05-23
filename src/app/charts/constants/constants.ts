@@ -5,6 +5,7 @@ export const DEGREES_PER_PIXEL = 0.5;
 export const FRAMES_PER_SECOND = 400;
 export const MILLISECONDS_PER_FRAME = 1 / FRAMES_PER_SECOND;
 export const LAST_STAGE_WITHOUT_GREEN_POINT = 3;
+export const FLASHING_STAGE = 1;
 
 // нужна ли
 export const RANGE_OF_ANGLES = {
