@@ -8,12 +8,14 @@ import { AppRoutingModule } from './app-routing.module';
 import { SaccadesMergedChartService } from './charts/services/saccadesMergedChartService';
 import { HttpClientModule } from '@angular/common/http';
 import { SaccadeVelocityChartComponent } from './charts/components/saccade-merged-test-chart/saccade-velocity-chart/saccade-velocity-chart.component';
+import { SaccadeMovementChartComponent } from './charts/components/saccade-merged-test-chart/saccade-movement-chart/saccade-movement-chart.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     SaccadeMergedBulbicamTestChartComponent,
-    SaccadeVelocityChartComponent
+    SaccadeVelocityChartComponent,
+    SaccadeMovementChartComponent
   ],
   imports: [
     BrowserModule,

@@ -4,6 +4,7 @@ export const START_OF_AXIS_X = 273;
 export const DEGREES_PER_PIXEL = 0.5;
 export const FRAMES_PER_SECOND = 400;
 export const MILLISECONDS_PER_FRAME = 1 / FRAMES_PER_SECOND;
+export const LAST_STAGE_WITHOUT_GREEN_POINT = 400;
 
 // нужна ли
 export const RANGE_OF_ANGLES = {
@@ -11,11 +12,10 @@ export const RANGE_OF_ANGLES = {
     to: -10
 };
 
-export interface ILine {
-  id: string,
-  color: string
-}
-export interface IPoint {
-  pointX: number | Date,
-  pointY: number | Date
-}
+export const FRAMES_FOR_UPDATE = {
+  framesPerBlock: 100,
+  millisecondsPerBlock: 100
+};
+
+
+

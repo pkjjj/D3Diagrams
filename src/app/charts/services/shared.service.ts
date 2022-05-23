@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { ICamMessage } from '../models/charts.model';
 
 @Injectable({
   providedIn: 'root'
@@ -12,13 +13,17 @@ export class SharedService {
     }
 
     public parseStringToJson(data: string): object | string {
-      let parsedString = data.replace(/\s/g, '')
-        .replace(/<([^}]+){/g, '{')
-        .replace(/}/g, '},')
-        .slice(0, -1);
+        let parsedString = data.replace(/\s/g, '')
+          .replace(/<([^}]+){/g, '{')
+          .replace(/}/g, '},')
+          .slice(0, -1);
 
-      parsedString = '[' + parsedString + ']';
-      return JSON.parse(parsedString);
-  }
+        parsedString = '[' + parsedString + ']';
 
+        let jsonObject = JSON.parse(parsedString);
+        jsonObject.pop();
+        jsonObject.shift();
+
+        return jsonObject;
+    }
 }

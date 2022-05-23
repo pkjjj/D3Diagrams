@@ -1,5 +1,2 @@
-<button type="button" class="btn btn-secondary" (click)="buildRealTimeChart()">Start test</button>
-<button type="button" class="btn btn-secondary" (click)="buildRecordedChart()">Load test</button>
-<button type="button" class="btn btn-secondary" (click)="clearChart()">Clear test</button>
-<svg #chart></svg>
-<app-saccade-velocity-chart *ngIf="data" [data]="data"></app-saccade-velocity-chart>
+<app-saccade-velocity-chart [data]=""></app-saccade-velocity-chart>
+<app-saccade-movement-chart [data]=""></app-saccade-movement-chart>

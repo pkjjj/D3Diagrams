@@ -1,9 +1,9 @@
 import { AfterViewInit, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
-import { Data } from '@angular/router';
 import * as d3 from 'd3';
-import { IPoint, ILine } from 'src/app/charts/constants/constants';
+import { IPoint, ILine } from 'src/app/charts/constants/types';
 import { ICamMessage } from 'src/app/charts/models/charts.model';
 import { RequestService } from 'src/app/charts/services/request.service';
+import { SaccadesMergedChartService } from 'src/app/charts/services/saccadesMergedChartService';
 import { SharedService } from 'src/app/charts/services/shared.service';
 
 @Component({
@@ -11,43 +11,55 @@ import { SharedService } from 'src/app/charts/services/shared.service';
   templateUrl: './saccade-velocity-chart.component.html',
   styleUrls: ['./saccade-velocity-chart.component.css']
 })
-export class SaccadeVelocityChartComponent implements OnInit, AfterViewInit {
-    @ViewChild('chart') private svgp: ElementRef;
+export class SaccadeVelocityChartComponent implements OnInit {
+    @ViewChild('chart') private svgElement: ElementRef;
     @Input() public data: IPoint[];
-    private width = 700;
-    private height = 700;
-    private margin = 50;
+    @Input() public width: number = 700;
+    @Input() public height: number = 700;
+    @Input() public margin: number = 50;
 
-    public frames: ICamMessage[];
-    public clonedFrames: ICamMessage[] = null;
-    public svg;
-    public svgInner;
-    public yScale;
-    public yScaleAngle;
-    public xScale;
-    public xAxis;
-    public yAxisDistance;
-    public yAxisAngle;
-    public lineGroup;
-    public lastPoint: [number, number][] = [];
-    public line: {  };
-    public amountGreenDots: number;
+    private frames: ICamMessage[];
+    private clonedFrames: ICamMessage[];
+    private svg: d3.Selection<any, unknown, null, undefined>;
+    private svgInner: any;
+    private yScale: any;
+    private xScale: any;
+    private xAxis: any;
+    private yAxisDistance: any;
+    private lastPoint: [number, number][] = [];
 
-    constructor(private requestService: RequestService, private sharedService: SharedService) { }
+    constructor(private chartService: SaccadesMergedChartService, private requestService: RequestService,
+      private sharedService: SharedService) { }
 
-    ngOnInit() {}
+    ngOnInit() {
+        this.requestService.getMemoryData()
+          .subscribe(data => {
+              this.frames = this.sharedService.parseStringToJson(data) as ICamMessage[];
+              this.clonedFrames = [ ...this.frames ];
+        });
+    }
 
-    ngAfterViewInit(): void {
+    public buildRecordedChart(): void {
+        if (this.data == null) {
+            const parsedFrames = this.chartService.setCamData(this.clonedFrames);
+            this.data = this.chartService.setVelocityData([...parsedFrames]);
+        }
+
         if (d3.select('#velocityChartContent').empty()) {
             this.initializeChart(this.data);
         }
         this.drawPoints(this.data);
-        console.log(this.data)
+    }
+
+    public clearChart(): void {
+        d3.select('#velocityChartPoints').selectChildren().remove();
+        this.clonedFrames = [ ...this.frames ];
+        this.lastPoint = [];
     }
 
     private initializeChart(data: IPoint[]): void {
       this.svg = d3
-        .select(this.svgp.nativeElement)
+        .select(this.svgElement.nativeElement)
         .attr('height', this.height)
         .attr('width', '100%');
 
@@ -77,9 +89,9 @@ export class SaccadeVelocityChartComponent implements OnInit, AfterViewInit {
 
       this.svgInner = this.svgInner
         .append('g')
-        .attr('id', 'chartPoints')
+        .attr('id', 'velocityChartPoints')
 
-      this.width = this.svgp.nativeElement.getBoundingClientRect().width;
+      this.width = this.svgElement.nativeElement.getBoundingClientRect().width;
 
       this.xScale.range([this.margin, this.width - 2 * this.margin]);
 
