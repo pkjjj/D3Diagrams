@@ -10,4 +10,5 @@ export abstract class ChartService {
         const currentTs: number = currentRawTs / 10000;
         return Math.abs((currentTs - startTs) / 1000);
     }
+    public abstract setVelocityData(frames: ICamMessage[], framesCount: number): void;
 }

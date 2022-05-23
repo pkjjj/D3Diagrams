@@ -11,17 +11,13 @@ import * as d3Scale from 'd3';
 import * as d3Shape from 'd3';
 import * as d3Array from 'd3';
 import * as d3Axis from 'd3';
-import { RANGE_OF_ANGLES, START_OF_AXIS_X } from '../../constants/constants';
+import { FRAMES_PER_SECOND, ILine, IPoint, RANGE_OF_ANGLES, START_OF_AXIS_X } from '../../constants/constants';
 import { RequestService } from '../../services/request.service';
+import { SharedService } from '../../services/shared.service';
 
 export enum CHART_TYPE {
     VELOCTIY,
     MOVEMENT
-}
-
-export interface Line {
-    id: string,
-    color: string
 }
 
 @Component({
@@ -40,8 +36,9 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
     private height = 700;
     private margin = 50;
 
+    public data: IPoint[];
     public frames: ICamMessage[];
-    public data: ICamMessage[] = null;
+    public clonedFrames: ICamMessage[] = null;
     public svg;
     public svgInner;
     public yScale;
@@ -55,68 +52,67 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
     public line: {  };
     public amountGreenDots: number;
     // чартсервис - сервис в котором должна быть реализована вся бизнес-логикаа
-    constructor(public chartService: SaccadesMergedChartService, private requestService: RequestService) {
+    constructor(public chartService: SaccadesMergedChartService, private requestService: RequestService,
+      private sharedService: SharedService) {
         super();
     }
-    // в этом хуке активируются все нужные подписки
     ngOnInit(): void {
         this.subscriptions.push(this.requestService.getMemoryData().subscribe());
 
         this.requestService.getMemoryData()
         .subscribe(data => {
-            this.jsonTestsResult = this.parseStringToJson(data);
-            this.frames = this.jsonTestsResult;
+            this.frames = this.sharedService.parseStringToJson(data) as ICamMessage[];
+            // надо ли вынести в shared service
             this.frames.shift();
             this.frames.pop();
+            this.clonedFrames = [ ...this.frames ];
         });
     }
-    // в этом хуке СВГ уже инициализирован. можно начинать рисовать
     ngAfterViewInit(): void {}
-    // этот хут отрабатывает при удалении компонента из дома
     ngOnDestroy(): void {
         this.subscriptions.forEach(s => s.unsubscribe());
     }
     // build real-time chart
     public buildRealTimeChart() {
-        this.chartService.addData(this.frames)
+        if (d3.select('#chartContent').empty()) {
+            this.chartService.addData(this.clonedFrames)
             .then(frames => {
                 this.initializeChart(frames);
             });
+        }
 
         const interval = setInterval(() => {
-            this.frames.length !== 0
-            ? this.drawPointsByAmount(100)
+            this.clonedFrames.length !== 0
+            ? this.drawPointsByFramesAmount(100)
             : clearInterval(interval);
         }, 100);
     }
     // build recorded chart
     public buildRecordedChart() {
-      const parsedFrames = this.chartService.setCamData(this.frames);
+        const parsedFrames = this.chartService.setCamData(this.clonedFrames);
+        this.data = this.chartService.setVelocityData([...parsedFrames]);
 
-      this.initializeChart(parsedFrames);
-      this.drawPoints(parsedFrames);
-      this.drawGreenLines(parsedFrames);
+        if (d3.select('#chartContent').empty()) {
+            this.initializeChart(parsedFrames);
+        }
+        this.drawPoints(parsedFrames);
+        this.drawGreenLines(parsedFrames);
     }
-    public clearChart(chartType: CHART_TYPE) {
 
+    public clearChart() {
+        d3.select('#chartPoints').selectChildren().remove();
+        this.clonedFrames = [ ...this.frames ];
+        this.lastPoint = [];
     }
-    private drawPointsByAmount(framesCount: number) {
-      this.chartService.addData(this.frames.splice(0, framesCount))
-        .then(frames => {
-            this.drawPoints(frames);
-            this.drawGreenLine(frames);
-        });
-    }
-    //make static
-    private parseStringToJson(data: string): string {
-        let parsedString = data.replace(/\s/g, '')
-          .replace(/<([^}]+){/g, '{')
-          .replace(/}/g, '},')
-          .slice(0, -1);
 
-        parsedString = '[' + parsedString + ']';
-        return JSON.parse(parsedString);
+    private drawPointsByFramesAmount(framesCount: number) {
+        this.chartService.addData(this.clonedFrames.splice(0, framesCount))
+          .then(frames => {
+              this.drawPoints(frames);
+              this.drawGreenLine(frames);
+          });
     }
+
     private initializeChart(data: ICamMessage[]): void {
         this.svg = d3
           .select(this.svgp.nativeElement)
@@ -125,6 +121,7 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
 
         this.svgInner = this.svg
           .append('g')
+          .attr('id', 'chartContent')
           .style('transform', 'translate(' + this.margin + 'px, ' + this.margin + 'px)');
 
         this.yScale = d3
@@ -156,7 +153,9 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
           .attr('id', 'x-axis')
           .style('transform', 'translate(0, ' + (this.height / 2 - this.margin) + 'px)');
 
-        this.svgInner.append('g')
+        this.svgInner = this.svgInner
+          .append('g')
+          .attr('id', 'chartPoints')
 
         this.width = this.svgp.nativeElement.getBoundingClientRect().width;
 
@@ -176,6 +175,7 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
         this.yAxisDistance.call(yAxis);
         this.yAxisAngle.call(yAxisAngle);
     }
+
     private drawPoints(data: ICamMessage[]): void {
         if (this.lastPoint.length != 0) {
             const firstTime: [number, number] = [this.xScale(data[0].pointX), this.yScale(data[0].pointY)]
@@ -194,42 +194,39 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
         this.lastPoint.push(points[data.length - 1]);
 
         this.drawLineOnChart(points, { id: 'line', color: 'red'});
-
-
-
-
     }
-  private drawGreenLine(data: ICamMessage[]): void {
-    const greenLinePoints: [number, number][] = data.filter(el => el.stage != 3).map(d => [
-      this.xScale(d.pointX),
-      this.yScaleAngle(d.angleGreenDotPointY),
-    ]);
-    this.drawLineOnChart(greenLinePoints, { id: 'greenLine', color: 'green' });
-  }
 
-  private drawGreenLines(data: ICamMessage[]) {
-    let greenDotIndex: number = null;
-    let indexValue = 0;
-
-    data.forEach(frame => {
-      if (frame.greenDotIndex != greenDotIndex) {
-        greenDotIndex = frame.greenDotIndex;
-        indexValue = data.findIndex(el => el.greenDotIndex != greenDotIndex);
-        // const resultArray = data.filter(el => el.stage != 3 && el.greenDotIndex != greenDotIndex);
-        // const lastIndex = resultArray.indexOf(resultArray[resultArray.length - 1]);
-        const greenLinePoints: [number, number][] = data.splice(0, indexValue).filter(el => el.stage != 3).map(d => [
+    private drawGreenLine(data: ICamMessage[]): void {
+        const greenLinePoints: [number, number][] = data.filter(el => el.stage != 3).map(d => [
           this.xScale(d.pointX),
           this.yScaleAngle(d.angleGreenDotPointY),
         ]);
-        this.drawLineOnChart(greenLinePoints, { id: 'greenLine', color: 'green' });
+        this.drawLineOnChart(greenLinePoints, { id: 'line', color: 'green' });
+    }
 
-        return;
-      }
-    });
-  }
+    private drawGreenLines(data: ICamMessage[]) {
+        let greenDotIndex: number = null;
+        let indexValue = 0;
+
+        data.forEach(frame => {
+          if (frame.greenDotIndex != greenDotIndex) {
+            greenDotIndex = frame.greenDotIndex;
+            indexValue = data.findIndex(el => el.greenDotIndex != greenDotIndex);
+            // const resultArray = data.filter(el => el.stage != 3 && el.greenDotIndex != greenDotIndex);
+            // const lastIndex = resultArray.indexOf(resultArray[resultArray.length - 1]);
+            const greenLinePoints: [number, number][] = data.splice(0, indexValue).filter(el => el.stage != 3).map(d => [
+              this.xScale(d.pointX),
+              this.yScaleAngle(d.angleGreenDotPointY),
+            ]);
+            this.drawLineOnChart(greenLinePoints, { id: 'greenLine', color: 'green' });
+
+            return;
+          }
+        });
+    }
 
     private drawLineOnChart(points: [number, number][],
-    lineStyle: Line): void {
+    lineStyle: ILine): void {
         const line = d3
         .line()
         .x(d => d[0])

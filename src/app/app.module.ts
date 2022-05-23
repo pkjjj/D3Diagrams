@@ -7,11 +7,13 @@ import { RouterModule } from '@angular/router';
 import { AppRoutingModule } from './app-routing.module';
 import { SaccadesMergedChartService } from './charts/services/saccadesMergedChartService';
 import { HttpClientModule } from '@angular/common/http';
+import { SaccadeVelocityChartComponent } from './charts/components/saccade-merged-test-chart/saccade-velocity-chart/saccade-velocity-chart.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     SaccadeMergedBulbicamTestChartComponent,
+    SaccadeVelocityChartComponent
   ],
   imports: [
     BrowserModule,

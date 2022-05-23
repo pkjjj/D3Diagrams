@@ -32,7 +32,7 @@ export interface ICamMessage {
     seconds?: number; // сколько прошло миллисекунд
     angleGreenDotPointY?: number;
     seen?: number;
-    velocity?: number;
+    isCalibratedForVelocity?: boolean;
     direction?: number;
     lineType?: number;
     lineColor?: string;
