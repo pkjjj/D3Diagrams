@@ -107,13 +107,12 @@ export class SaccadeMovementChartComponent implements OnInit {
       this.yAxisDistance = this.svgInner
         .append('g')
         .attr('id', 'y-axisDistance')
-        .style('transform', 'translate(' + (this.margin) + 'px,  0)')
+        .style('transform', 'translate(' + (this.margin) + 'px,  0)');
 
       this.yAxisAngle = this.svgInner
         .append('g')
         .attr('id', 'y-axisAngle')
-        .style('transform', 'translate(' + (this.margin - 30) + 'px,  0)')
-        // .style('transform', 'translate(0, ' + (-140) + 'px)');
+        .style('transform', 'translate(' + (this.margin - 30) + 'px,  0)');
 
       this.xScale = d3
         .scaleLinear()
@@ -126,8 +125,7 @@ export class SaccadeMovementChartComponent implements OnInit {
 
       this.svgInner = this.svgInner
         .append('g')
-        .attr('id', 'chartPoints')
-        // .style('transform', 'translate(0, ' + (-120) + 'px)');
+        .attr('id', 'chartPoints');
 
       this.width = this.svgElement.nativeElement
         .getBoundingClientRect()
@@ -150,7 +148,7 @@ export class SaccadeMovementChartComponent implements OnInit {
       this.yAxisAngle.call(yAxisAngle);
     }
 
-    private drawPoints(data: ICamMessage[]): void {//TODO try to refactor
+    private drawPoints(data: ICamMessage[]): void {
         if (this.lastPoint.length != 0) {
             const firstTime: [number, number] = [this.xScale(data[0].pointX), this.yScale(data[0].pointY)]
             this.lastPoint.push(firstTime);
@@ -171,7 +169,9 @@ export class SaccadeMovementChartComponent implements OnInit {
     }
 
     private drawGreenLine(data: ICamMessage[]): void {
-        const greenLinePoints: [number, number][] = data.filter(el => el.stage != 3).map(d => [
+        const greenLinePoints: [number, number][] = data
+        .filter(el => el.stage != LAST_STAGE_WITHOUT_GREEN_POINT)
+        .map(d => [
           this.xScale(d.pointX),
           this.yScaleAngle(d.angleGreenDotPointY),
         ]);
@@ -186,8 +186,9 @@ export class SaccadeMovementChartComponent implements OnInit {
         data.forEach(frame => {
             if (frame.greenDotIndex != greenDotIndex) {
               greenDotIndex = frame.greenDotIndex;
+              console.log(greenDotIndex)
               indexValue = data.findIndex(el => el.greenDotIndex != greenDotIndex);
-
+              console.log(indexValue)
               const greenLinePoints: [number, number][] = data
                 .splice(0, indexValue)
                 .filter(el => el.stage != LAST_STAGE_WITHOUT_GREEN_POINT)

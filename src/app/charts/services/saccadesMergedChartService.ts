@@ -67,7 +67,7 @@ export class SaccadesMergedChartService extends ChartService {
                   break;
             }
         });
-
+        
         return frames;
     }
 
