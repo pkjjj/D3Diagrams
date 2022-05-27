@@ -1,5 +1,4 @@
 // import { ISmartImage } from '../../saccadioweb/common/interfaces/smart-image.interface';
-// import { TEST_TYPE } from '../enum/test-type';
 
 export interface ICamMessage {
     chartTypeString: TEST_TYPE; // тип теста !!
@@ -26,13 +25,14 @@ export interface ICamMessage {
     greenDotIndex?: number;
     redDotIndex?: number;
     stage?: number;
+    calibrationGlintData: any;
     trial?: number;
     pointX?: number;
     pointY?: number;
-    seconds?: number; // сколько прошло миллисекунд
+    seconds?: number; // сколько прошло секунд
     angleGreenDotPointY?: number;
+    angleRedDotPointY?: number;
     seen?: number;
-    isCalibratedForVelocity?: boolean;
     direction?: number;
     lineType?: number;
     lineColor?: string;

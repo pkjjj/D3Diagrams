@@ -5,7 +5,8 @@ import { ICamMessage } from 'src/app/charts/models/charts.model';
 import { SaccadesMergedChartService } from 'src/app/charts/services/saccadesMergedChartService';
 import { RequestService } from 'src/app/charts/services/request.service';
 import { SharedService } from 'src/app/charts/services/shared.service';
-import { FLASHING_STAGE, FRAMES_FOR_UPDATE, LAST_STAGE_WITHOUT_GREEN_POINT, RANGE_OF_ANGLES, START_OF_AXIS_X } from 'src/app/charts/constants/constants';
+import { COUNT_OF_DEGREES_TICKS, COUNT_SEGMENTS_OF_TICKS, FLASHING_STAGE, FRAMES_FOR_UPDATE, LAST_STAGE_WITHOUT_GREEN_POINT, RANGE_OF_ANGLES, START_OF_AXIS_X } from 'src/app/charts/constants/constants';
+import { AXIS_Y_SIZE_IN_PIXELS, RATIO_PIXELS_TO_DEGREES } from 'src/app/charts/constants/chart';
 
 @Component({
   selector: 'app-saccade-movement-chart',
@@ -31,6 +32,10 @@ export class SaccadeMovementChartComponent implements OnInit {
     private yAxisAngle: any;
     private lastPoint: [number, number][] = [];
     private trialsCount: number;
+    private scaleFactor: number;
+    private axisYPixelsMaxValue: number;
+    private axisYPixelsMinValue: number;
+
 
     constructor(private chartService: SaccadesMergedChartService, private requestService: RequestService,
       private sharedService: SharedService) { }
@@ -40,35 +45,20 @@ export class SaccadeMovementChartComponent implements OnInit {
           .subscribe(data => {
               this.initialFrames = this.sharedService.parseStringToJson(data) as ICamMessage[];
               this.frames = [ ...this.initialFrames ];
-              this.trialsCount = this.frames[this.frames.length - 1].trial;
+              this.trialsCount = this.frames[this.frames.length - 1].trial + 1;
         });
-    }
-
-    // build real-time chart
-    public buildRealTimeChart() {
-        if (d3.select('#chartContent').empty()) {
-            this.chartService.addData(this.frames)
-            .then(initialFrames => {
-                this.initializeChart(initialFrames);
-            });
-        }
-
-        const interval = setInterval(() => {
-            this.frames.length !== 0
-            ? this.drawPointsByFramesAmount(FRAMES_FOR_UPDATE.framesPerBlock)
-            : clearInterval(interval);
-        }, FRAMES_FOR_UPDATE.millisecondsPerBlock);
     }
 
     // build recorded chart
     public buildRecordedChart() {
-        const parsedFrames = this.chartService.setCamData(this.frames);
+        let parsedFrames = this.chartService.setCamData(this.frames);
+        parsedFrames = this.chartService.setMovementData(parsedFrames);
         if (d3.select('#chartContent').empty()) {
             this.initializeChart(parsedFrames);
         }
         this.drawPoints(parsedFrames);
         this.drawGreenLines([ ...parsedFrames ]);
-        this.drawRedCircle([ ...parsedFrames ]);
+        this.drawRedCircles([ ...parsedFrames ]);
     }
 
     // clear chart
@@ -76,15 +66,6 @@ export class SaccadeMovementChartComponent implements OnInit {
         d3.select('#chartPoints').selectChildren().remove();
         this.frames = [ ...this.initialFrames ];
         this.lastPoint = [];
-    }
-
-    private drawPointsByFramesAmount(framesCount: number) {
-        this.chartService.addData(this.frames.splice(0, framesCount))
-          .then(frames => {
-              this.drawPoints(frames);
-              this.drawGreenLines([ ...frames ]);
-              this.drawRedCircle([ ...frames ]);
-          });
     }
 
     private initializeChart(data: ICamMessage[]): void {
@@ -98,11 +79,41 @@ export class SaccadeMovementChartComponent implements OnInit {
           .attr('id', 'chartContent')
           .style('transform', 'translate(' + this.margin + 'px, ' + this.margin + 'px)');
 
+        const startOfAxisX = data[0].calibrationGlintData.axisXLocation;
+        let maxValue = startOfAxisX + 20;
+        let minValue = startOfAxisX - 20;
+        this.axisYPixelsMaxValue = maxValue;
+        this.axisYPixelsMinValue = minValue;
+
+        const [maxPointY, minPointY] = [d3.max(data, d => d.pointY), d3.min(data, d => d.pointY)];
+
+        const pixelsBetweenTicks = data[0].calibrationGlintData.pixelDifference;
+        let axisYSize = pixelsBetweenTicks * COUNT_SEGMENTS_OF_TICKS;
+
+        if (minPointY < minValue) {
+            const minPointYDifference = minValue - minPointY;
+            console.log("first" + minPointYDifference, this.getScaleFactor(axisYSize))
+            axisYSize += minPointYDifference;
+            RANGE_OF_ANGLES.to -= minPointYDifference / RATIO_PIXELS_TO_DEGREES;
+            minValue = minPointY;
+        }
+
+        if (maxPointY > maxValue) {
+            const maxPointYDifference = maxPointY - maxValue;
+            axisYSize += maxPointYDifference;
+            RANGE_OF_ANGLES.from += maxPointYDifference / RATIO_PIXELS_TO_DEGREES;
+            maxValue = maxPointY;
+        }
+
+        // const scaleFactor = (this.height - this.margin * 2) / axisYSize;
+        const scaleFactor = this.getScaleFactor(axisYSize);
+        const axisYheight = axisYSize * scaleFactor;
+
         this.yScale = d3
           .scaleLinear()
-          .domain([d3.max(data, d => d.pointY + 13), d3.min(data, d => d.pointY)])
+          .domain([maxValue, minValue])
           .range([0, this.height - 2 * this.margin]);
-
+        console.log(d3.max(data, d => d.pointY), d3.min(data, d => d.pointY))
         this.yScaleAngle = d3
           .scaleLinear()
           .domain([RANGE_OF_ANGLES.from, RANGE_OF_ANGLES.to])
@@ -116,16 +127,21 @@ export class SaccadeMovementChartComponent implements OnInit {
         this.yAxisAngle = this.svgInner
           .append('g')
           .attr('id', 'y-axisAngle')
-          .style('transform', 'translate(' + (this.margin - 30) + 'px,  0)');
+          .style('transform', 'translate(' + (this.margin - 30) + 'px, 0)');
 
         this.xScale = d3
           .scaleLinear()
           .domain(d3.extent(data, d => d.pointX));
 
+        console.log(this.axisYPixelsMinValue - minPointY, this.getScaleFactor(axisYSize))
+        const axisXOffsetToCenter = this.getScaleFactor(axisYSize) * (this.axisYPixelsMinValue - minPointY);
+
+        console.log(axisXOffsetToCenter);
+
         this.xAxis = this.svgInner
           .append('g')
           .attr('id', 'x-axis')
-          .style('transform', 'translate(0, ' + (this.height / 2 - this.margin) + 'px)');
+          .style('transform', 'translate(0, ' + (this.computeLocationAxisX(startOfAxisX, minValue, maxValue)) + 'px)');
 
         this.svgInner = this.svgInner
           .append('g')
@@ -146,41 +162,19 @@ export class SaccadeMovementChartComponent implements OnInit {
           .axisLeft(this.yScale);
         const yAxisAngle = d3
           .axisLeft(this.yScaleAngle)
-          .ticks(5);
+          .ticks(COUNT_OF_DEGREES_TICKS)
 
         this.yAxisDistance.call(yAxis);
         this.yAxisAngle.call(yAxisAngle);
     }
 
     private drawPoints(data: ICamMessage[]): void {
-        if (this.lastPoint.length != 0) {
-            const firstTime: [number, number] = [this.xScale(data[0].pointX), this.yScale(data[0].pointY)]
-            this.lastPoint.push(firstTime);
-        }
-
-        this.drawLineOnChart(this.lastPoint, { id: 'line', color: 'blue'});
-
-        this.lastPoint = [];
-
         const points: [number, number][] = data.map(d => [
           this.xScale(d.pointX),
           this.yScale(d.pointY),
         ]);
 
-        this.lastPoint.push(points[points.length - 1]);
-
         this.drawLineOnChart(points, { id: 'line', color: 'blue'});
-    }
-
-    private drawGreenLine(data: ICamMessage[]): void {
-        const greenLinePoints: [number, number][] = data
-        .filter(el => el.stage != LAST_STAGE_WITHOUT_GREEN_POINT)
-        .map(d => [
-          this.xScale(d.pointX),
-          this.yScaleAngle(d.angleGreenDotPointY),
-        ]);
-        console.log(greenLinePoints)
-        this.drawLineOnChart(greenLinePoints, { id: 'line', color: 'green' });
     }
 
     private drawGreenLines(data: ICamMessage[]) {
@@ -190,9 +184,10 @@ export class SaccadeMovementChartComponent implements OnInit {
         data.forEach(frame => {
             if (frame.greenDotIndex != greenDotIndex) {
               greenDotIndex = frame.greenDotIndex;
-              console.log(greenDotIndex)
               indexValue = data.findIndex(el => el.greenDotIndex != greenDotIndex);
-              console.log(indexValue)
+
+              if (frame.trial == this.trialsCount - 1) { indexValue = data.length - 1; }
+
               const greenLinePoints: [number, number][] = data
                 .splice(0, indexValue)
                 .filter(el => el.stage != LAST_STAGE_WITHOUT_GREEN_POINT)
@@ -206,26 +201,28 @@ export class SaccadeMovementChartComponent implements OnInit {
         });
     }
 
-    private drawRedCircle(data: ICamMessage[]) {
+    private drawRedCircles(data: ICamMessage[]) {
         const radius = 5;
-        // console.log(data.length);
+
         for (let i = 0; i < this.trialsCount; i++) {
             let indexValue = data.findIndex(el => el.stage == FLASHING_STAGE);
 
-            this.svgInner
-              .append('circle')
-              .attr('cx', this.xScale(data[indexValue].pointX))
-              .attr('cy', this.yScaleAngle(data[indexValue].angleGreenDotPointY) + radius)
-              .attr('r', radius)
-              .attr('fill', 'red');
+            if (indexValue != -1) {
+              this.svgInner
+                .append('circle')
+                .attr('cx', this.xScale(data[indexValue].pointX))
+                .attr('cy', this.yScaleAngle(data[indexValue].angleRedDotPointY))
+                .attr('r', radius)
+                .attr('fill', 'red');
 
-            for (let i = indexValue; i < data.length; i++) {
-                if (data[i].stage == FLASHING_STAGE)
-                    indexValue = i;
-                else
-                    break;
+              for (let i = indexValue; i < data.length; i++) {
+                  if (data[i].stage == FLASHING_STAGE)
+                      indexValue = i;
+                  else
+                      break;
+              }
+              data.splice(0, indexValue + 1);
             }
-            data.splice(0, indexValue + 1);
         }
     }
 
@@ -246,18 +243,26 @@ export class SaccadeMovementChartComponent implements OnInit {
           .style('stroke-width', '2px');
     }
 
-    // compute axis X location with scale factor. Axis should be on 274 y point.
-    private computeLocationAxisX(data: ICamMessage[]): number {
-      const values = d3.extent(data, d => d.pointY);
-      const difference = values[1] - values[0];
+    // compute scale factor for axis Y.
+    private getScaleFactor(axisYHeight: number): number {
 
-      const scaleFactor = difference !== 0
-        ? this.height / difference
-        : 0;
+        const scaleFactor = axisYHeight !== 0
+          ? (this.height - this.margin * 2) / axisYHeight
+          : 0;
 
-      const offsetToBottom = values[1] - START_OF_AXIS_X;
-      const offsetToBottomWithFactor = offsetToBottom * scaleFactor;
+        return scaleFactor;
+    }
 
-      return offsetToBottomWithFactor;
+    private computeLocationAxisX(startOfAxisX: number, minValue: number, maxValue: number): number {
+        const difference = maxValue - minValue;
+
+        const scaleFactor = difference !== 0
+          ? (this.height - this.margin * 2) / difference
+          : 0;
+
+        const offsetToBottom = maxValue - startOfAxisX;
+        const offsetToBottomWithFactor = offsetToBottom * scaleFactor;
+
+        return offsetToBottomWithFactor;
     }
 }
