@@ -58,52 +58,52 @@ export class SaccadeVelocityChartComponent implements OnInit {
     }
 
     private initializeChart(data: IPoint[]): void {
-      this.svg = d3
-        .select(this.svgElement.nativeElement)
-        .attr('height', this.height)
-        .attr('width', '100%');
+        this.svg = d3
+          .select(this.svgElement.nativeElement)
+          .attr('height', this.height)
+          .attr('width', '100%');
 
-      this.svgInner = this.svg
-        .append('g')
-        .attr('id', 'velocityChartContent')
-        .style('transform', 'translate(' + this.margin + 'px, ' + this.margin + 'px)');
+        this.svgInner = this.svg
+          .append('g')
+          .attr('id', 'velocityChartContent')
+          .style('transform', 'translate(' + this.margin + 'px, ' + this.margin + 'px)');
 
-      this.yScale = d3
-        .scaleLinear()
-        .domain([d3.max(data, d => d.pointY), 0])
-        .range([0, this.height - 2 * this.margin]);
+        this.yScale = d3
+          .scaleLinear()
+          .domain([d3.max(data, d => d.pointY), 0])
+          .range([0, this.height - 2 * this.margin]);
 
-      this.xScale = d3
-        .scaleLinear()
-        .domain(d3.extent(data, d => d.pointX));
+        this.xScale = d3
+          .scaleLinear()
+          .domain(d3.extent(data, d => d.pointX));
 
-      this.yAxisDistance = this.svgInner
-        .append('g')
-        .attr('id', 'y-axisDistance')
-        .style('transform', 'translate(' + this.margin + 'px,  0)');
+        this.yAxisDistance = this.svgInner
+          .append('g')
+          .attr('id', 'y-axisDistance')
+          .style('transform', 'translate(' + this.margin + 'px,  0)');
 
-      this.xAxis = this.svgInner
-        .append('g')
-        .attr('id', 'x-axis')
-        .style('transform', 'translate(0, ' + (this.height - this.margin * 2) + 'px)');
+        this.xAxis = this.svgInner
+          .append('g')
+          .attr('id', 'x-axis')
+          .style('transform', 'translate(0, ' + (this.height - this.margin * 2) + 'px)');
 
-      this.svgInner = this.svgInner
-        .append('g')
-        .attr('id', 'velocityChartPoints')
+        this.svgInner = this.svgInner
+          .append('g')
+          .attr('id', 'velocityChartPoints')
 
-      this.width = this.svgElement.nativeElement.getBoundingClientRect().width;
+        this.width = this.svgElement.nativeElement.getBoundingClientRect().width;
 
-      this.xScale.range([this.margin, this.width - 2 * this.margin]);
+        this.xScale.range([this.margin, this.width - 2 * this.margin]);
 
-      const xAxis = d3
-        .axisBottom(this.xScale);
+        const xAxis = d3
+          .axisBottom(this.xScale);
 
-      this.xAxis.call(xAxis);
+        this.xAxis.call(xAxis);
 
-      const yAxis = d3
-        .axisLeft(this.yScale);
+        const yAxis = d3
+          .axisLeft(this.yScale);
 
-      this.yAxisDistance.call(yAxis);
+        this.yAxisDistance.call(yAxis);
     }
 
     private drawPoints(data: IPoint[]): void {
@@ -116,15 +116,14 @@ export class SaccadeVelocityChartComponent implements OnInit {
 
         this.lastPoint = [];
 
-          const points: [number, number][] = data.map(d => [
+        const points: [number, number][] = data.map(d => [
             this.xScale(d.pointX),
             this.yScale(d.pointY),
-          ]);
+        ]);
 
-          this.lastPoint.push(points[data.length - 1]);
+        this.lastPoint.push(points[data.length - 1]);
 
-          this.drawLineOnChart(points, { id: 'line', color: 'red'});
-
+        this.drawLineOnChart(points, { id: 'line', color: 'red'});
     }
 
     private drawLineOnChart(points: [number, number][],

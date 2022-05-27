@@ -1,5 +1,7 @@
 // import { ISmartImage } from '../../saccadioweb/common/interfaces/smart-image.interface';
 
+import { ICalibrationMovementChartData } from "../constants/types";
+
 export interface ICamMessage {
     chartTypeString: TEST_TYPE; // тип теста !!
     message_type: MESSAGE_TYPE; // тип сообщения !!
@@ -90,10 +92,15 @@ export enum BACKGROUND_COLOR {
 }
 
 export enum TEST_TYPE {
-  SACCADE_MERGED,
+    SACCADE_MERGED,
 }
 
 export interface ICamTestData {
     _id?: string;
     data: Array<ICamMessage>;
+}
+
+export interface IChartData {
+    calibrationData: ICalibrationMovementChartData;
+    framesData: ICamMessage[];
 }

@@ -1,14 +1,16 @@
 export interface ILine {
-  id: string,
-  color: string
+    id: string,
+    color: string
 }
 export interface IPoint {
-  pointX: number | Date,
-  pointY: number | Date
+    pointX: number | Date,
+    pointY: number | Date
 }
 
-export class CalibrationData {
-  distance: number;
-  firstDotAngleValue: number;
-  secondDotAngleValue: number;
+export interface ICalibrationMovementChartData {
+    startOfAxisX: number;
+    yScaleMaxValue: number;
+    yScaleMinValue: number;
+    yScaleAngleMaxValue: number;
+    yScaleAngleMinValue: number;
 }
