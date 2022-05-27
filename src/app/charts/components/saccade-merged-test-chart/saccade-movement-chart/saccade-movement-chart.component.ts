@@ -1,11 +1,10 @@
 import { Component, ElementRef, Input, OnChanges, OnInit, ViewChild } from '@angular/core';
-import { ICalibrationMovementChartData, ILine } from 'src/app/charts/constants/types';
+import { CHART_TYPE, ICalibrationMovementChartData, ILine } from 'src/app/charts/constants/types';
 import * as d3 from 'd3';
 import { ICamMessage, IChartData } from 'src/app/charts/models/charts.model';
 import { SaccadesMergedChartService } from 'src/app/charts/services/saccadesMergedChartService';
 import { RequestService } from 'src/app/charts/services/request.service';
 import { SharedService } from 'src/app/charts/services/shared.service';
-import { RATIO_PIXELS_TO_DEGREES } from 'src/app/charts/constants/chart';
 import { rangeOfDegrees, COUNT_OF_DEGREES_TICKS, LAST_STAGE_WITHOUT_GREEN_POINT, FLASHING_STAGE } from 'src/app/charts/constants/movement-chart';
 
 @Component({
@@ -33,10 +32,6 @@ export class SaccadeMovementChartComponent implements OnInit {
     private yAxisDistance: any;
     private yAxisAngle: any;
     private trialsCount: number;
-    private yScaleMaxValue: number;
-    private yScaleMinValue: number;
-    private yScaleAngleMaxValue: number;
-    private yScaleAngleMinValue: number;
     private readonly AXIS_Y_ANGLE_OFFSET_X = 30;
 
     constructor(private chartService: SaccadesMergedChartService, private requestService: RequestService,
@@ -53,9 +48,9 @@ export class SaccadeMovementChartComponent implements OnInit {
 
     // build recorded chart
     public buildRecordedChart() {
-        const parsedFrames = this.chartService.setCamData(this.frames);
-        this.chartData = this.chartService.setMovementData(parsedFrames);
+        this.chartData = this.chartService.setCamData(this.frames, CHART_TYPE.MOVEMENT) as IChartData;
         this.calibrationData = this.chartData.calibrationData;
+        const parsedFrames = this.chartData.framesData;
 
         if (d3.select('#chartContent').empty()) {
             this.initializeChart(parsedFrames);

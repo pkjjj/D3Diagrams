@@ -10,6 +10,9 @@ import { HttpClientModule } from '@angular/common/http';
 import { SaccadeVelocityChartComponent } from './charts/components/saccade-merged-test-chart/saccade-velocity-chart/saccade-velocity-chart.component';
 import { SaccadeMovementChartComponent } from './charts/components/saccade-merged-test-chart/saccade-movement-chart/saccade-movement-chart.component';
 import { SaccadeRealTimeChartComponent } from './charts/components/saccade-merged-test-chart/saccade-real-time-chart/saccade-real-time-chart.component';
+import { ParsingService } from './charts/services/parsingService';
+import { MovementComputingService } from './charts/services/movementComputingService';
+import { VelocityComputingService } from './charts/services/velocityComputingService';
 
 @NgModule({
   declarations: [
@@ -25,7 +28,12 @@ import { SaccadeRealTimeChartComponent } from './charts/components/saccade-merge
     HttpClientModule,
     AppRoutingModule,
   ],
-  providers: [SaccadesMergedChartService],
+  providers: [
+    SaccadesMergedChartService,
+    ParsingService,
+    MovementComputingService,
+    VelocityComputingService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

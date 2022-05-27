@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
-import { IPoint, ILine } from 'src/app/charts/constants/types';
+import { IPoint, ILine, CHART_TYPE } from 'src/app/charts/constants/types';
 import { ICamMessage } from 'src/app/charts/models/charts.model';
 import { RequestService } from 'src/app/charts/services/request.service';
 import { SaccadesMergedChartService } from 'src/app/charts/services/saccadesMergedChartService';
@@ -41,8 +41,8 @@ export class SaccadeVelocityChartComponent implements OnInit {
 
     public buildRecordedChart(): void {
         if (this.data == null) {
-            const parsedFrames = this.chartService.setCamData(this.clonedFrames);
-            this.data = this.chartService.setVelocityData([...parsedFrames]);
+            this.data = this.chartService.setCamData(this.clonedFrames, CHART_TYPE.VELOCITY) as IPoint[];
+            // this.data = this.chartService.setVelocityData([...parsedFrames]);
         }
 
         if (d3.select('#velocityChartContent').empty()) {

@@ -14,3 +14,9 @@ export interface ICalibrationMovementChartData {
     yScaleAngleMaxValue: number;
     yScaleAngleMinValue: number;
 }
+
+export enum CHART_TYPE {
+  MOVEMENT,
+  VELOCITY,
+  REAL_TIME,
+}

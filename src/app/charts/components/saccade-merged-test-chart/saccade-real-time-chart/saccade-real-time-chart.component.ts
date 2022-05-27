@@ -1,7 +1,6 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
-import { INDEX_DOT_FOR_CHECK } from 'src/app/charts/constants/constants';
-import { framesForUpdate } from 'src/app/charts/constants/real-time-chart';
+import { framesForUpdate, INDEX_DOT_FOR_CHECK } from 'src/app/charts/constants/real-time-chart';
 import { ILine } from 'src/app/charts/constants/types';
 import { ICamMessage } from 'src/app/charts/models/charts.model';
 import { RequestService } from 'src/app/charts/services/request.service';
