@@ -1,0 +1,38 @@
+<app-saccade-real-time-chart></app-saccade-real-time-chart>
+
+<div class="container-fluid">
+  <h1>Recorded charts</h1>
+
+  <div class="d-flex justify-content-center">
+    <app-saccade-test-results *ngIf="testResults" [testResults]="testResults"></app-saccade-test-results>
+  </div>
+  <div class="row">
+
+    <div class="col-2">
+      <button type="button" class="btn btn-secondary" (click)="buildRecordedCharts()">Load test</button>
+      <button type="button" class="btn btn-secondary d-block" (click)="clearCharts()">Clear test</button>
+
+      <div class="form-check d-inline-block ms-1">
+        <label class="form-check-label" for="flexCheckDefault">Show velocity data</label>
+        <input class="form-check-input" type="checkbox" value=""
+        id="flexCheckDefault" (change)="showVelocityOnMotionChart($event)"/>
+      </div>
+
+      <div class="form-check d-inline-block ms-1">
+        <label class="form-check-label" for="flexCheckDefault">Proportion</label>
+        <input class="form-check-input" type="checkbox" value=""
+        id="flexCheckDefault" (change)="showDashedLines($event)"/>
+      </div>
+
+    </div>
+
+    <div class="col-11">
+      <app-saccade-movement-chart #movementElement [data]=""></app-saccade-movement-chart>
+      <app-saccade-velocity-chart #velocityElement [data]=""></app-saccade-velocity-chart>
+    </div>
+
+  </div>
+</div>
+
+
+

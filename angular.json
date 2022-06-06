@@ -31,8 +31,13 @@
               "src/assets",
               {
                 "glob": "**/*",
-                "input": "src/app/charts/assets",
-                "output": "/assets/charts"
+                "input": "src/app/saccade-memory-test/assets",
+                "output": "/assets/saccade-memory-test"
+              },
+              {
+                "glob": "**/*",
+                "input": "src/app/smooth-saccade-pursuit-test/assets",
+                "output": "/assets/smooth-saccade-pursuit-test"
               }
             ],
             "styles": [
@@ -104,8 +109,13 @@
               "src/assets",
               {
                 "glob": "**/*",
-                "input": "src/app/charts/assets",
-                "output": "/assets/charts"
+                "input": "src/app/saccade-memory-test/assets",
+                "output": "/assets/saccade-memory-test"
+              },
+              {
+                "glob": "**/*",
+                "input": "src/app/smooth-saccade-pursuit-test/assets",
+                "output": "/assets/smooth-saccade-pursuit-test"
               }
             ],
             "styles": [
@@ -113,9 +123,21 @@
             ],
             "scripts": []
           }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
+          }
         }
       }
     }
   },
-  "defaultProject": "D3Diagrams"
+  "defaultProject": "D3Diagrams",
+  "cli": {
+    "defaultCollection": "@angular-eslint/schematics"
+  }
 }
