@@ -1,30 +1,33 @@
 import { Injectable } from '@angular/core';
 import { ICamMessage, IChartData } from '../models/charts.model';
-import { ChartService } from './chartService';
-import { CHART_TYPE, IPoint } from '../constants/types';
+import { ChartService } from '../../services/chartService';
+import { CHART_TYPE } from '../constants/types';
 import { MovementComputingService } from './movementComputingService';
 import { VelocityComputingService } from './velocityComputingService';
-import { ParsingService } from './parsingService';
-import { FRAMES_PER_SECOND } from '../constants/velocity-chart';
+import { MemoryParsingService } from './memoryParsingService';
 @Injectable()
 export class SaccadesMergedChartService extends ChartService {
 
-    constructor(private parsingService: ParsingService,
+    constructor(private parsingService: MemoryParsingService,
       private movementComputingService: MovementComputingService,
       private velocityComputingService: VelocityComputingService) {
         super();
     }
 
-    public addData(frames: ICamMessage[]): Promise<ICamMessage[]> {
+    public async addData(frames: ICamMessage[]): Promise<ICamMessage[]> {
         return new Promise((resolve, reject) => {
-            const parsedFrames = this.parsingService.parseFrames(frames);
-
-            resolve(parsedFrames);
+            let parsedFrames = this.parsingService.parseFrames(frames);
+            parsedFrames = this.parsingService.getDotsDegreeByIndex(parsedFrames);
+            
+            setTimeout(() => {
+                resolve(parsedFrames);
+            }, 100);
         });
     }
 
-    public setCamData(frames: ICamMessage[], chartType?: CHART_TYPE): IChartData | IPoint[] | ICamMessage[] {
-        const parsedFrames = this.parsingService.parseFrames(frames);
+    public setCamData(frames: ICamMessage[], chartType?: CHART_TYPE): IChartData | ICamMessage[] {
+        let parsedFrames = this.parsingService.parseFrames(frames);
+        parsedFrames = this.parsingService.getDotsDegreeByIndex(parsedFrames);
 
         if (typeof chartType === 'undefined') {
             return parsedFrames;

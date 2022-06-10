@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import * as d3 from 'd3';
-import { FLASHING_STAGE, rangeOfDegrees, RATIO_PIXELS_TO_DEGREES } from '../constants/movement-chart';
-import { ICalibrationData, ICalibrationDot, ICalibrationMovementChartData } from '../constants/types';
+import { rangeOfDegrees, RATIO_PIXELS_TO_DEGREES } from '../constants/movement-chart';
+import { ICalibrationData, ICalibrationMovementChartData } from '../constants/types';
 import { ICamMessage, IChartData } from '../models/charts.model';
 import { CalibrationComputingService } from './calibrationComputingService';
 
@@ -23,8 +23,7 @@ export class MovementComputingService {
     }
 
     private computeChartCalibrationData(frames: ICamMessage[],
-      calibrationData: ICalibrationData): ICalibrationMovementChartData
-    {
+      calibrationData: ICalibrationData): ICalibrationMovementChartData {
         const startOfAxisX = calibrationData.firstPointYOfTrial;
         let maxValue = startOfAxisX + 20;
         let minValue = startOfAxisX - 20;

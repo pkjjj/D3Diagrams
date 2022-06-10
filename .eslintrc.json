@@ -12,6 +12,7 @@
         "project": [
           "tsconfig.json"
         ],
+        "tsconfigRootDir": "D3Diagrams",
         "createDefaultProgram": true
       },
       "extends": [

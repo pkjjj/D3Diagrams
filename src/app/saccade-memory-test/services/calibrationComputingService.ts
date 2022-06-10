@@ -1,16 +1,14 @@
 import { Injectable } from "@angular/core";
 import { FLASHING_STAGE } from "../constants/movement-chart";
-import { ICalibrationData, ICalibrationDot } from "../constants/types";
+import { ICalibrationData } from "../constants/types";
 import { ICamMessage } from "../models/charts.model";
 
 @Injectable()
 export class CalibrationComputingService {
 
-    constructor() {}
-
     public fillFramesByCalibrationData(frames: ICamMessage[]) {
         const trialCount = frames[frames.length - 1].trial + 1;
-        const calibrationArray = [];
+        const calibrationArray: ICalibrationData[] = [];
 
         for (let i = 0; i < trialCount; i++) {
             if (i + 1 > trialCount)
@@ -44,17 +42,16 @@ export class CalibrationComputingService {
     }
 
     private computeCalibrationData(firstTrialframes: ICamMessage[], secondTrialframes: ICamMessage[]) {
-
-        const flashIndex = firstTrialframes.findIndex(el => el.stage == FLASHING_STAGE);
+        const flashIndex = firstTrialframes.findIndex(el => el.stage === FLASHING_STAGE);
         const firstDot = firstTrialframes[flashIndex];
-        const secondFlashIndex = secondTrialframes.findIndex(el => el.stage == FLASHING_STAGE);
+        const secondFlashIndex = secondTrialframes.findIndex(el => el.stage === FLASHING_STAGE);
         const secondDot = secondTrialframes[secondFlashIndex];
 
         return this.computeCalibrationGlintData(firstDot, secondDot);
     }
 
     private computeCalibrationGlintData(firstDot: ICamMessage, secondDot: ICamMessage) {
-        let firstPointYOfTrial = firstDot.rawODx;
+        const firstPointYOfTrial = firstDot.rawODx;
         const pixelDifference = firstDot.rawODx - secondDot.rawODx;
         const degreeDifference = firstDot.angleGreenDotPointY - secondDot.angleGreenDotPointY;
         const ratio = pixelDifference / degreeDifference;

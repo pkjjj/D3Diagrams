@@ -1,7 +1,8 @@
-import { AfterViewInit, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
+import { ScaleLinear } from 'd3';
 import { FLASHING_STAGE } from 'src/app/saccade-memory-test/constants/movement-chart';
-import { ILine, CHART_TYPE } from 'src/app/saccade-memory-test/constants/types';
+import { ILine } from 'src/app/saccade-memory-test/constants/types';
 import { ICamMessage, IChartData } from 'src/app/saccade-memory-test/models/charts.model';
 import { RequestService } from 'src/app/saccade-memory-test/services/request.service';
 import { SaccadesMergedChartService } from 'src/app/saccade-memory-test/services/saccadesMergedChartService';
@@ -16,17 +17,15 @@ import { LINE_COLOR } from './saccade-velocity-chart.constants';
 export class SaccadeVelocityChartComponent implements OnInit {
     @ViewChild('chart') private svgElement: ElementRef;
     @Input() public data: ICamMessage[];
-    @Input() public width: number = 1250;
-    @Input() public height: number = 500;
-    @Input() public margin: number = 50;
+    @Input() public width = 1250;
+    @Input() public height = 500;
+    @Input() public margin = 50;
 
     private frames: ICamMessage[];
-    private svg: d3.Selection<any, unknown, null, undefined>;
-    private svgInner: any;
-    private yScale: any;
-    private xScale: any;
-    private xAxis: any;
-    private yAxisDistance: any;
+    private svg: d3.Selection<SVGElement, unknown, null, undefined>;
+    private svgInner: d3.Selection<SVGElement, unknown, null, undefined>;
+    private yScale: ScaleLinear<number, number, never>;
+    private xScale: ScaleLinear<number, number, never>;
     private points: [number, number][] = [];
     private trialsCount: number;
 
@@ -46,12 +45,12 @@ export class SaccadeVelocityChartComponent implements OnInit {
             this.initializeChart(data.framesData);
         }
         console.log(data)
-        this.drawLineOnChart(data.framesData, { id: 'line', color: LINE_COLOR});
-        this.drawTresholdDashedLine(data.framesData);
+        this.drawLineOnChart(data.framesData, { id: 'line', color: LINE_COLOR });
+        this.drawTresholdDashedLine();
     }
 
     public buildRecordedPointsOnMovementChart(data: ICamMessage[]): void {
-        this.drawLineOnMovementChart(data, { id: 'velocityline', color: 'red'});
+        this.drawLineOnMovementChart(data, { id: 'velocityline', color: 'red' });
     }
 
     public showDashedLines(frames: ICamMessage[]): void {
@@ -60,14 +59,14 @@ export class SaccadeVelocityChartComponent implements OnInit {
 
     private initializeChart(data: ICamMessage[]): void {
         this.svg = d3
-          .select(this.svgElement.nativeElement)
+          .select(this.svgElement.nativeElement as SVGElement)
           .attr('height', this.height)
           .attr('width', '100%');
 
         this.svgInner = this.svg
           .append('g')
           .attr('id', 'velocityChartContent')
-          .style('transform', 'translate(' + this.margin + 'px, ' + 10 + 'px)');
+          .style('transform', 'translate(' + this.margin.toString() + 'px,  10px)');
 
         this.yScale = d3
           .scaleLinear()
@@ -80,15 +79,15 @@ export class SaccadeVelocityChartComponent implements OnInit {
 
           console.log(d3.extent(data, d => d.pointX))
 
-        this.yAxisDistance = this.svgInner
+        const distanceAxisY = this.svgInner
           .append('g')
           .attr('id', 'y-axisDistance')
-          .style('transform', 'translate(' + this.margin + 'px,  0)');
+          .style('transform', 'translate(' + this.margin.toString() + 'px,  0)');
 
-        this.xAxis = this.svgInner
+        const timeAxisX = this.svgInner
           .append('g')
           .attr('id', 'x-axis')
-          .style('transform', 'translate(0, ' + (this.height - this.margin * 2) + 'px)');
+          .style('transform', 'translate(0, ' + (this.height - this.margin * 2).toString() + 'px)');
 
         this.svgInner = this.svgInner
           .append('g')
@@ -101,12 +100,12 @@ export class SaccadeVelocityChartComponent implements OnInit {
         const xAxis = d3
           .axisBottom(this.xScale);
 
-        this.xAxis.call(xAxis);
+        timeAxisX.call(xAxis);
 
         const yAxis = d3
           .axisLeft(this.yScale);
 
-        this.yAxisDistance.call(yAxis);
+        distanceAxisY.call(yAxis);
     }
 
     private drawLineOnChart(data: ICamMessage[],
@@ -196,7 +195,7 @@ export class SaccadeVelocityChartComponent implements OnInit {
         }
       }
 
-      private drawTresholdDashedLine(data: ICamMessage[]): void {
+      private drawTresholdDashedLine(): void {
           this.svgInner.append("line")
             .attr('id', 'velocityTresholdDashedLine')
             .attr("x1", this.width - this.margin * 2)

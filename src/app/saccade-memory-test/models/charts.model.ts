@@ -43,6 +43,16 @@ export interface ICamMessage {
     pupilvelocity?: number;
     pupillatency?: number;
     pupilsymmetry?: number;
+    eyeODx?: number;
+    eyeODy?: number;
+    eyeOSx?: number;
+    eyeOSy?: number;
+    stimuliODx?: number;
+    stimuliODy?: number;
+    stimuliOSx?: number;
+    stimuliOSy?: number;
+    verticalPointY?: number;
+    horizontalPointY?: number;
     // Ptosis fields start
     ODBottomX?: number;
     ODBottomY?: number;

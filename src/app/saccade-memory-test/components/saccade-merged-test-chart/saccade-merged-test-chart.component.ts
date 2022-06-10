@@ -1,10 +1,10 @@
-import { AfterViewInit, Component, ElementRef, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+/* eslint-disable @angular-eslint/component-selector */
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
-import { BehaviorSubject, first, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { IChartEdit } from '../../components/haploChart.component';
 import { CHART_TYPE } from '../../constants/types';
 import { ICamMessage, IChartData, ITestResults } from '../../models/charts.model';
-import { ChartService } from '../../services/chartService';
 import { RequestService } from '../../services/request.service';
 import { SaccadesMergedChartService } from '../../services/saccadesMergedChartService';
 import { SharedService } from '../../services/shared.service';
@@ -15,9 +15,8 @@ import { SaccadeVelocityChartComponent } from './saccade-velocity-chart/saccade-
 @Component({
     selector: 'saccade-merged-test-chart',
     templateUrl: 'saccade-merged-test-chart.component.html',
-    styleUrls: ['saccade-merged-test-chart.component.scss'],
 })
-export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartComponent implements OnInit, AfterViewInit, OnDestroy {
+export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartComponent implements OnInit, OnDestroy {
 
     @ViewChild('velocityElement') velocityChild: SaccadeVelocityChartComponent;
     @ViewChild('movementElement') movementChild: SaccadeMovementChartComponent;
@@ -41,8 +40,6 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
               this.clonedFrames = [ ...this.frames ];
         });
     }
-
-    ngAfterViewInit(): void {}
 
     ngOnDestroy(): void {
         this.subscriptions.forEach(s => s.unsubscribe());
@@ -89,7 +86,7 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
           this.velocityChild.showDashedLines([ ...frames ]);
           this.movementChild.showDashedLines([ ...frames ]);
       }
-      else if (!isChecked){
+      else if (!isChecked) {
           d3.selectAll('#velocityDashedLine').remove();
           d3.selectAll('#movementDashedLine').remove();
       }
