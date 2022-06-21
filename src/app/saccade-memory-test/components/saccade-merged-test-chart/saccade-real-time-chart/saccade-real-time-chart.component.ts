@@ -1,12 +1,11 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
 import { ScaleLinear } from 'd3';
-import { framesForUpdate, INDEX_DOT_FOR_CHECK } from 'src/app/saccade-memory-test/constants/real-time-chart';
 import { ILine } from 'src/app/saccade-memory-test/constants/types';
-import { ICamMessage } from 'src/app/saccade-memory-test/models/charts.model';
-import { RequestService } from 'src/app/saccade-memory-test/services/request.service';
+import { ICamMessage } from 'src/app/models/charts.model';
+import { RequestService } from 'src/app/shared/requestService';
 import { SaccadesMergedChartService } from 'src/app/saccade-memory-test/services/saccadesMergedChartService';
-import { SharedService } from 'src/app/saccade-memory-test/services/shared.service';
+import { JsonService } from 'src/app/shared/jsonService';
 
 @Component({
   selector: 'app-saccade-real-time-chart',
@@ -14,7 +13,7 @@ import { SharedService } from 'src/app/saccade-memory-test/services/shared.servi
   styleUrls: ['./saccade-real-time-chart.component.css']
 })
 export class SaccadeRealTimeChartComponent implements OnInit {
-    @ViewChild('chart') private svgElement: ElementRef;
+    @ViewChild('realTimeChart') private svgElement: ElementRef<SVGElement>;
     @Input() public data: ICamMessage[];
     @Input() public width = 700;
     @Input() public height = 700;
@@ -29,9 +28,11 @@ export class SaccadeRealTimeChartComponent implements OnInit {
     private lastPoint: [number, number][] = [];
     private lastPointX: number;
     private readonly AXIS_X_MAX_VALUE = 60;
+    private readonly MAX_Y_SCALE_VALUE = 300;
+    private readonly MIN_Y_SCALE_VALUE = 180;
 
     constructor(private chartService: SaccadesMergedChartService, private requestService: RequestService,
-      private sharedService: SharedService) { }
+      private sharedService: JsonService) { }
 
     ngOnInit() {
         this.requestService.getMemoryData()
@@ -41,59 +42,40 @@ export class SaccadeRealTimeChartComponent implements OnInit {
         });
     }
 
-    // build real-time chart
-    public async buildRealTimeChart() {
+    public async buildRealTimeChart(): Promise<void> {
         if (d3.select('#realTimeChartContent').empty()) {
-            await this.chartService.addData(this.frames)
-            .then(initialFrames => {
-                this.tuneFramesCount(initialFrames);
-                this.initializeChart(initialFrames);
-            })
-            .catch(error => {
-                throw new Error(error + 'Problem with real time data');
-            });
-        }
+            this.initializeChart();
 
-        const interval = setInterval(() => {
-            this.frames.length !== 0
-            ? this.drawPointsByFramesAmount(framesForUpdate.framesPerBlock)
-            : this.hideChart(interval);
-        }, framesForUpdate.millisecondsPerBlock);
+            for (let i = 0; i < this.frames.length / 100; i++) {
+                await this.chartService.addData([ ...this.frames.splice(0, 100) ])
+                    .then(initialFrames => {
+                        console.log(initialFrames)
+                        this.drawPoints([ ...initialFrames ]);
+                    })
+                    .catch(error => {
+                        throw new Error('Cannot get real time cam data')
+                    });
+            }
+        }
     }
 
-    // clear chart
-    public clearChart() {
+    public clearChart(): void {
         d3.select('#realTimeChartPoints').selectChildren().remove();
         this.frames = [ ...this.initialFrames ];
         this.lastPoint = [];
         this.lastPointX = null;
     }
 
-    private hideChart(interval) {
-        clearInterval(interval);
+    private hideChart(): void {
         d3.select('#realTimeChart').remove();
     }
 
-    private tuneFramesCount(initialFrames: ICamMessage[]) {
-        initialFrames.forEach((frame, index) => {
-          if (index % INDEX_DOT_FOR_CHECK == 0 && index != 0)
-            initialFrames.splice(index - (INDEX_DOT_FOR_CHECK - 1), INDEX_DOT_FOR_CHECK);
-        });
-    }
-
-    private drawPointsByFramesAmount(framesCount: number) {
-        this.chartService.addData(this.frames.splice(0, framesCount))
-          .then(frames => {
-              this.drawPoints([ ...frames ]);
-          });
-    }
-
-    private initializeChart(data: ICamMessage[]): void {
+    private initializeChart(): void {
         this.svg = d3
           .select(this.svgElement.nativeElement)
           .attr('height', this.height)
           .attr('width', '100%')
-          .attr('id', 'realTimeChart') as d3.Selection<SVGElement, unknown, null, undefined>;;
+          .attr('id', 'realTimeChart');
 
         this.svgInner = this.svg
           .append('g')
@@ -102,7 +84,7 @@ export class SaccadeRealTimeChartComponent implements OnInit {
 
         this.yScale = d3
           .scaleLinear()
-          .domain([d3.max(data, d => d.pointY + 30), d3.min(data, d => d.pointY - 30)])
+          .domain([this.MAX_Y_SCALE_VALUE, this.MIN_Y_SCALE_VALUE])
           .range([0, this.height - 2 * this.margin]);
 
         const yAxisDistance = this.svgInner
@@ -150,7 +132,7 @@ export class SaccadeRealTimeChartComponent implements OnInit {
             this.lastPoint.push(firstTime);
         }
 
-        this.drawLineOnChart(this.lastPoint, { id: 'line', color: 'blue'});
+        this.drawLineOnChart(this.lastPoint, { id: 'line', color: 'blue' });
 
         this.lastPoint = [];
 
@@ -161,7 +143,7 @@ export class SaccadeRealTimeChartComponent implements OnInit {
 
         this.lastPoint.push(points[points.length - 1]);
 
-        this.drawLineOnChart(points, { id: 'line', color: 'blue'});
+        this.drawLineOnChart(points, { id: 'line', color: 'blue' });
         this.setChartBackgroundColor(data);
     }
 

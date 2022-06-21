@@ -13,7 +13,8 @@
           "tsconfig.json"
         ],
         "tsconfigRootDir": "D3Diagrams",
-        "createDefaultProgram": true
+        "createDefaultProgram": true,
+        "sourceType": "module"
       },
       "extends": [
         "plugin:@angular-eslint/recommended",

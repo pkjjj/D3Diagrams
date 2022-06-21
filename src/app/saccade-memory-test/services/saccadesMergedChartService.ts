@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { ICamMessage, IChartData } from '../models/charts.model';
+import { ICamMessage, IChartData } from '../../models/charts.model';
 import { ChartService } from '../../services/chartService';
 import { CHART_TYPE } from '../constants/types';
-import { MovementComputingService } from './movementComputingService';
-import { VelocityComputingService } from './velocityComputingService';
 import { MemoryParsingService } from './memoryParsingService';
+import { MovementComputingService } from './computing/movementComputingService';
+import { VelocityComputingService } from './computing/velocityComputingService';
+import * as d3 from 'd3';
 @Injectable()
 export class SaccadesMergedChartService extends ChartService {
 
@@ -18,7 +19,7 @@ export class SaccadesMergedChartService extends ChartService {
         return new Promise((resolve, reject) => {
             let parsedFrames = this.parsingService.parseFrames(frames);
             parsedFrames = this.parsingService.getDotsDegreeByIndex(parsedFrames);
-            
+
             setTimeout(() => {
                 resolve(parsedFrames);
             }, 100);
@@ -33,10 +34,10 @@ export class SaccadesMergedChartService extends ChartService {
             return parsedFrames;
         }
         if (chartType === CHART_TYPE.MOVEMENT) {
-            return this.movementComputingService.getChartMovementData([ ...parsedFrames ]);
+            return this.movementComputingService.computeChartData([ ...parsedFrames ]);
         }
         if (chartType === CHART_TYPE.VELOCITY) {
-            return this.velocityComputingService.computeVelocityDataByFramesCount([ ...parsedFrames ]);
+            return this.velocityComputingService.computeChartData([ ...parsedFrames ]);
         }
 
         return null;
@@ -47,6 +48,7 @@ export class SaccadesMergedChartService extends ChartService {
     }
 
     public clearData(): void {
-        throw new Error('Method not implemented.');
+        d3.select('#velocityChartPoints').selectChildren().remove();
+        d3.select('#chartPoints').selectChildren().remove();
     }
 }

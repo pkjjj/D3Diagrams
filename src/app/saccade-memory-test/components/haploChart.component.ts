@@ -1,5 +1,5 @@
 import { Injectable, Input } from '@angular/core';
-import { ICamMessage } from '../models/charts.model';
+import { ICamMessage } from '../../models/charts.model';
 
 export interface IChartMargin {
     top: number;

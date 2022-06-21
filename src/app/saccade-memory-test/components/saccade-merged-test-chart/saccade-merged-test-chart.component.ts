@@ -4,13 +4,13 @@ import * as d3 from 'd3';
 import { Subscription } from 'rxjs';
 import { IChartEdit } from '../../components/haploChart.component';
 import { CHART_TYPE } from '../../constants/types';
-import { ICamMessage, IChartData, ITestResults } from '../../models/charts.model';
-import { RequestService } from '../../services/request.service';
+import { ICamMessage, IChartData, ITestResults } from '../../../models/charts.model';
+import { RequestService } from '../../../shared/requestService';
 import { SaccadesMergedChartService } from '../../services/saccadesMergedChartService';
-import { SharedService } from '../../services/shared.service';
 import { BulbicamChartComponent } from '../haploChart.component';
 import { SaccadeMovementChartComponent } from './saccade-movement-chart/saccade-movement-chart.component';
 import { SaccadeVelocityChartComponent } from './saccade-velocity-chart/saccade-velocity-chart.component';
+import { JsonService } from 'src/app/shared/jsonService';
 
 @Component({
     selector: 'saccade-merged-test-chart',
@@ -29,7 +29,7 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
     private clonedFrames: ICamMessage[];
 
     constructor(private chartService: SaccadesMergedChartService, private requestService: RequestService,
-      private sharedService: SharedService) {
+      private sharedService: JsonService) {
         super();
     }
 
@@ -61,8 +61,7 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
     }
 
     public clearCharts(): void {
-        d3.select('#velocityChartPoints').selectChildren().remove();
-        d3.select('#chartPoints').selectChildren().remove();
+        this.chartService.clearData();
         this.testResults = null;
     }
 
@@ -79,17 +78,17 @@ export class SaccadeMergedBulbicamTestChartComponent extends BulbicamChartCompon
     }
 
     public showDashedLines(event: Event): void {
-      const isChecked = (<HTMLInputElement>event.target).checked;
-      const frames = this.chartService.setCamData([ ...this.clonedFrames]) as ICamMessage[];
+        const isChecked = (<HTMLInputElement>event.target).checked;
+        const frames = this.chartService.setCamData([ ...this.clonedFrames]) as ICamMessage[];
 
-      if (isChecked && frames !== null) {
-          this.velocityChild.showDashedLines([ ...frames ]);
-          this.movementChild.showDashedLines([ ...frames ]);
-      }
-      else if (!isChecked) {
-          d3.selectAll('#velocityDashedLine').remove();
-          d3.selectAll('#movementDashedLine').remove();
-      }
+        if (isChecked && frames !== null) {
+            this.velocityChild.showDashedLines([ ...frames ]);
+            this.movementChild.showDashedLines([ ...frames ]);
+        }
+        else if (!isChecked) {
+            d3.selectAll('#velocityDashedLine').remove();
+            d3.selectAll('#movementDashedLine').remove();
+        }
     }
     // функция для очистки данных перед загрузкой новых
     public clearData(): void {}

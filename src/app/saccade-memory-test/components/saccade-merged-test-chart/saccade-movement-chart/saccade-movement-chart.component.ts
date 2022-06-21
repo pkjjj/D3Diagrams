@@ -1,12 +1,12 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { ICalibrationMovementChartData, ILine } from 'src/app/saccade-memory-test/constants/types';
 import * as d3 from 'd3';
-import { ICamMessage, IChartData } from 'src/app/saccade-memory-test/models/charts.model';
-import { SaccadesMergedChartService } from 'src/app/saccade-memory-test/services/saccadesMergedChartService';
-import { RequestService } from 'src/app/saccade-memory-test/services/request.service';
-import { SharedService } from 'src/app/saccade-memory-test/services/shared.service';
-import { COUNT_OF_DEGREES_TICKS, LAST_STAGE_WITHOUT_GREEN_POINT, FLASHING_STAGE } from 'src/app/saccade-memory-test/constants/movement-chart';
+import { ICamMessage, IChartData } from 'src/app/models/charts.model';
+import { RequestService } from 'src/app/shared/requestService';
+import { COUNT_OF_DEGREES_TICKS, LAST_STAGE_WITHOUT_GREEN_POINT } from 'src/app/saccade-memory-test/components/saccade-merged-test-chart/saccade-movement-chart/movement-chart.constants';
 import { ScaleLinear } from 'd3';
+import { FLASHING_STAGE } from 'src/app/saccade-memory-test/constants/constants';
+import { JsonService } from 'src/app/shared/jsonService';
 
 @Component({
   selector: 'app-saccade-movement-chart',
@@ -14,7 +14,7 @@ import { ScaleLinear } from 'd3';
   styleUrls: ['./saccade-movement-chart.component.css']
 })
 export class SaccadeMovementChartComponent implements OnInit {
-    @ViewChild('chart') private svgElement: ElementRef;
+    @ViewChild('saccadeMovementChart') private svgElement: ElementRef;
     @Input() public data: ICamMessage[];
     @Input() public width = 1250;
     @Input() public height = 500;
@@ -32,8 +32,8 @@ export class SaccadeMovementChartComponent implements OnInit {
     private trialsCount: number;
     private readonly AXIS_Y_ANGLE_OFFSET_X = 30;
 
-    constructor(private chartService: SaccadesMergedChartService, private requestService: RequestService,
-      private sharedService: SharedService) { }
+    constructor(private requestService: RequestService,
+      private sharedService: JsonService) { }
 
     ngOnInit() {
         this.requestService.getMemoryData()
@@ -44,7 +44,6 @@ export class SaccadeMovementChartComponent implements OnInit {
         });
     }
 
-    // build recorded chart
     public buildRecordedChart(chartData: IChartData) {
         this.calibrationData = chartData.calibrationData;
         const parsedFrames = chartData.framesData;
@@ -110,10 +109,6 @@ export class SaccadeMovementChartComponent implements OnInit {
         this.svgInner = this.svgInner
           .append('g')
           .attr('id', 'chartPoints');
-
-        // this.width = this.svgElement.nativeElement
-        //   .getBoundingClientRect()
-        //   .width;
 
         this.xScale.range([this.margin, this.width - 2 * this.margin]);
 

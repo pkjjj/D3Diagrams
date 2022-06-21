@@ -2,13 +2,13 @@ import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
 import { ScaleLinear } from 'd3';
 import { LINE_COLOR } from 'src/app/saccade-memory-test/components/saccade-merged-test-chart/saccade-velocity-chart/saccade-velocity-chart.constants';
-import { FLASHING_STAGE } from 'src/app/saccade-memory-test/constants/movement-chart';
 import { ILine } from 'src/app/saccade-memory-test/constants/types';
-import { ICamMessage, IChartData } from 'src/app/saccade-memory-test/models/charts.model';
-import { RequestService } from 'src/app/saccade-memory-test/services/request.service';
-import { SaccadesMergedChartService } from 'src/app/saccade-memory-test/services/saccadesMergedChartService';
-import { SharedService } from 'src/app/saccade-memory-test/services/shared.service';
+import { ICamMessage, IChartData, ISaccadeResult } from 'src/app/models/charts.model';
 
+const Y_SCALE_INCREASE_FACTOR = 50;
+const TEXT_OFFSET_BY_Y = 30;
+const WHOLE_TEXT_OFFSET_Y = 500;
+const VELOCITY_TRESHOLD = 30;
 @Component({
   selector: 'app-smooth-saccade-velocity-chart',
   templateUrl: './smooth-saccade-velocity-chart.component.html',
@@ -17,36 +17,28 @@ import { SharedService } from 'src/app/saccade-memory-test/services/shared.servi
 export class SmoothSaccadeVelocityChartComponent implements OnInit {
     @ViewChild('chart') private svgElement: ElementRef;
     @Input() public data: ICamMessage[];
-    @Input() public width = 1250;
+    @Input() public width = 1400;
     @Input() public height = 500;
     @Input() public margin = 50;
 
-    private frames: ICamMessage[];
     private svg: d3.Selection<SVGElement, unknown, null, undefined>;
     private svgInner: d3.Selection<SVGElement, unknown, null, undefined>;
     private yScale: ScaleLinear<number, number, never>;
     private xScale: ScaleLinear<number, number, never>;
     private points: [number, number][] = [];
-    private trialsCount: number;
 
-    constructor(private chartService: SaccadesMergedChartService, private requestService: RequestService,
-      private sharedService: SharedService) { }
+    constructor() { }
 
     ngOnInit() {
-        this.requestService.getMemoryData()
-          .subscribe(data => {
-              this.frames = this.sharedService.parseStringToJson(data) as ICamMessage[];
-              this.trialsCount = this.frames[this.frames.length - 1].trial + 1;
-        });
     }
 
-    public buildRecordedChart(data: IChartData): void {
-        if (d3.select('#velocityChartContent').empty()) {
-            this.initializeChart(data.framesData);
-        }
+    public buildRecordedChart(data: ICamMessage[], testResults: ISaccadeResult[]): void {
         console.log(data)
-        this.drawLineOnChart(data.framesData, { id: 'line', color: LINE_COLOR });
+        this.initializeChart(data);
+        this.drawLineOnChart(data, { id: 'line', color: LINE_COLOR });
         this.drawTresholdDashedLine();
+        this.drawTestResults([ ...data ], testResults);
+        this.drawProportionDashedLines([ ...data ]);
     }
 
     public buildRecordedPointsOnMovementChart(data: ICamMessage[]): void {
@@ -61,7 +53,7 @@ export class SmoothSaccadeVelocityChartComponent implements OnInit {
         this.svg = d3
           .select(this.svgElement.nativeElement as SVGElement)
           .attr('height', this.height)
-          .attr('width', '100%');
+          .attr('width', this.width);
 
         this.svgInner = this.svg
           .append('g')
@@ -70,14 +62,12 @@ export class SmoothSaccadeVelocityChartComponent implements OnInit {
 
         this.yScale = d3
           .scaleLinear()
-          .domain([d3.max(data, d => d.pupilvelocity), 0])
+          .domain([d3.max(data, d => d.pupilvelocity) + Y_SCALE_INCREASE_FACTOR, 0])
           .range([0, this.height - 2 * this.margin]);
-
-        console.log(d3.max(data, d => d.pupilvelocity))
 
         this.xScale = d3
           .scaleLinear()
-          .domain([0, d3.max(data, d => d.pointX)]);
+          .domain([d3.min(data, d => d.pointX), d3.max(data, d => d.pointX)]);
 
         const distanceAxisY = this.svgInner
           .append('g')
@@ -91,9 +81,9 @@ export class SmoothSaccadeVelocityChartComponent implements OnInit {
 
         this.svgInner = this.svgInner
           .append('g')
-          .attr('id', 'velocityChartPoints')
+          .attr('id', 'velocityChartPoints');
 
-        // this.width = this.svgElement.nativeElement.getBoundingClientRect().width;
+        this.width = this.svgElement.nativeElement.getBoundingClientRect().width;
 
         this.xScale.range([this.margin, this.width - 2 * this.margin]);
 
@@ -169,39 +159,61 @@ export class SmoothSaccadeVelocityChartComponent implements OnInit {
         this.points = [];
     }
 
+    private drawTestResults(data: ICamMessage[], testResults: ISaccadeResult[]) {
+        for (let i = 0; i < testResults.length; i++) {
+            if (testResults[i].noResponse !== false) { break; }
+
+            const saccadeStartIndex = data.findIndex(el => el.stimuliOS !== data[0].stimuliOS);
+            const saccadeEndIndex = data.slice(saccadeStartIndex).findIndex(el => el.stimuliOS !== data[saccadeStartIndex].stimuliOS);
+            let saccadeCenterIndex = Math.round((saccadeEndIndex - saccadeStartIndex) / 2);
+
+            if (saccadeEndIndex === -1) {
+                saccadeCenterIndex = Math.round(((data.length - 1) - saccadeStartIndex) / 2);
+            }
+            const textLocation: [number, number] = [this.xScale(data[saccadeCenterIndex].pointX), -(this.height - this.margin - WHOLE_TEXT_OFFSET_Y)];
+
+            testResults[i].saccadesResults.forEach((saccade, index) => {
+                this.svgInner
+                    .append('text')
+                    .attr('x', textLocation[0])
+                    .attr('y', textLocation[1] - (TEXT_OFFSET_BY_Y + index * 10))
+                    .style('text-anchor', 'middle')
+                    .style('font-weight', 'bold')
+                    .style('font-size', '8px')
+                    .text(`S${index}L ${saccade.latency}ms Peak ${Math.trunc(saccade.peakVelocity)} A ${saccade.amplitude}`);
+            });
+
+            data.splice(0, saccadeEndIndex);
+        }
+    }
+
     private drawProportionDashedLines(data: ICamMessage[]): void {
-      for (let i = 0; i < this.trialsCount; i++) {
-          let indexValue = data.findIndex(el => el.stage == FLASHING_STAGE);
-          console.log(data[indexValue].pointX, this.height - this.margin * 2)
-          this.svgInner.append("line")
+        while (data.length > 0) {
+            const indexValue = data.findIndex(el => el.stimuliOS !== data[0].stimuliOS);
+            if (indexValue === - 1) { break; }
+
+            this.svgInner.append("line")
             .attr('id', 'velocityDashedLine')
-            .attr("x1", this.xScale(data[indexValue].pointX))
+            .attr("x1", this.xScale(data[indexValue - 1].pointX))
             .attr("y1", 0)
-            .attr("x2", this.xScale(data[indexValue].pointX))
+            .attr("x2", this.xScale(data[indexValue - 1].pointX))
             .attr("y2", this.height - this.margin * 2)
             .style("stroke-dasharray", ("3, 3"))
             .style("stroke-width", 2)
             .style("stroke", "red")
             .style("fill", "none");
 
-          for (let i = indexValue; i < data.length; i++) {
-            if (data[i].stage == FLASHING_STAGE)
-                indexValue = i;
-            else
-                break;
-          }
-
-          data.splice(0, indexValue + 1);
-      }
+            data.splice(0, indexValue);
+        }
     }
 
     private drawTresholdDashedLine(): void {
         this.svgInner.append("line")
           .attr('id', 'velocityTresholdDashedLine')
           .attr("x1", this.width - this.margin * 2)
-          .attr("y1", (this.height - this.margin * 2) - 30)
+          .attr("y1", this.yScale(VELOCITY_TRESHOLD))
           .attr("x2", this.margin)
-          .attr("y2", (this.height - this.margin * 2) - 30)
+          .attr("y2", this.yScale(VELOCITY_TRESHOLD))
           .style("stroke-dasharray", ("3, 3"))
           .style("stroke-width", 2)
           .style("stroke", "red")

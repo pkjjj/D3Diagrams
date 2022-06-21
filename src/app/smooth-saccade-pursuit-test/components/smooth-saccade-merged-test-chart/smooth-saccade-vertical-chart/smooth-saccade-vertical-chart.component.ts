@@ -1,12 +1,10 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
 import { ScaleLinear } from 'd3';
-import { COUNT_OF_DEGREES_TICKS, LAST_STAGE_WITHOUT_GREEN_POINT, FLASHING_STAGE } from 'src/app/saccade-memory-test/constants/movement-chart';
-import { ICalibrationMovementChartData, ILine } from 'src/app/saccade-memory-test/constants/types';
-import { ICamMessage, IChartData } from 'src/app/saccade-memory-test/models/charts.model';
-import { RequestService } from 'src/app/saccade-memory-test/services/request.service';
-import { SaccadesMergedChartService } from 'src/app/saccade-memory-test/services/saccadesMergedChartService';
-import { SharedService } from 'src/app/saccade-memory-test/services/shared.service';
+import { COUNT_OF_DEGREES_TICKS } from 'src/app/saccade-memory-test/components/saccade-merged-test-chart/saccade-movement-chart/movement-chart.constants';
+import { ILine } from 'src/app/saccade-memory-test/constants/types';
+import { ICamMessage, IChartData } from 'src/app/models/charts.model';
+import { FLASHING_STAGE } from 'src/app/saccade-memory-test/constants/constants';
 
 @Component({
   selector: 'app-smooth-saccade-vertical-chart',
@@ -21,41 +19,24 @@ export class SmoothSaccadeVerticalChartComponent implements OnInit {
     @Input() public height = 500;
     @Input() public margin = 50;
 
-    private chartData: IChartData;
-    private calibrationData: ICalibrationMovementChartData;
-    private initialFrames: ICamMessage[];
-    private frames: ICamMessage[];
     private svg: d3.Selection<SVGElement, unknown, null, undefined>;
     private svgInner: d3.Selection<SVGElement, unknown, null, undefined>;
-    private yScale: ScaleLinear<number, number, never>;
     private yScaleAngle: ScaleLinear<number, number, never>;
     private xScale: ScaleLinear<number, number, never>;
     private trialsCount: number;
-    private readonly AXIS_Y_ANGLE_OFFSET_X = 30;
 
-    constructor(private chartService: SaccadesMergedChartService, private requestService: RequestService,
-      private sharedService: SharedService) { }
+    constructor() { }
 
     ngOnInit() {
-        this.requestService.getMemoryData()
-          .subscribe(data => {
-              this.initialFrames = this.sharedService.parseStringToJson(data) as ICamMessage[];
-              this.frames = [ ...this.initialFrames ];
-              this.trialsCount = this.frames[this.frames.length - 1].trial + 1;
-        });
     }
 
-    // build recorded chart
     public buildRecordedChart(chartData: IChartData) {
-        this.calibrationData = chartData.calibrationData;
         const parsedFrames = chartData.framesData;
 
         if (d3.select('#chartContent').empty()) {
             this.initializeChart(parsedFrames);
         }
         this.drawPoints(parsedFrames);
-        // this.drawGreenLines([ ...parsedFrames ]);
-        // this.drawRedCircles([ ...parsedFrames ], chartData.testResults.latencyArray);
     }
 
     public showDashedLines(frames: ICamMessage[]): void {
@@ -74,20 +55,10 @@ export class SmoothSaccadeVerticalChartComponent implements OnInit {
           .attr('id', 'chartContent')
           .style('transform', 'translate(' + this.margin.toString() + 'px, ' + this.margin.toString() + 'px)');
 
-        this.yScale = d3
-          .scaleLinear()
-          .domain(d3.extent(data, f => f.eyeOSy))
-          .range([0, this.height - 2 * this.margin]);
-
         this.yScaleAngle = d3
           .scaleLinear()
           .domain(d3.extent(data, f => f.stimuliOSy))
           .range([0, this.height - 2 * this.margin]);
-
-        const distanceAxisY = this.svgInner
-          .append('g')
-          .attr('id', 'y-axisDistance')
-          .style('transform', 'translate(' + this.margin.toString() + 'px,  0)');
 
         const angleAxisY = this.svgInner
           .append('g')
@@ -98,11 +69,6 @@ export class SmoothSaccadeVerticalChartComponent implements OnInit {
           .scaleLinear()
           .domain([0, d3.max(data, d => d.pointX)]);
 
-        // const startOfAxisX = this.calibrationData.startOfAxisX;
-        // const minValue = this.calibrationData.yScaleMinValue;
-        // const maxValue = this.calibrationData.yScaleMaxValue;
-        // const locationAxisX = this.computeLocationAxisX(startOfAxisX, minValue, maxValue);
-
         const timeAxisX = this.svgInner
           .append('g')
           .attr('id', 'x-axis')
@@ -112,10 +78,6 @@ export class SmoothSaccadeVerticalChartComponent implements OnInit {
           .append('g')
           .attr('id', 'chartPoints');
 
-        // this.width = this.svgElement.nativeElement
-        //   .getBoundingClientRect()
-        //   .width;
-
         this.xScale.range([this.margin, this.width - 2 * this.margin]);
 
         const xAxis = d3
@@ -123,13 +85,10 @@ export class SmoothSaccadeVerticalChartComponent implements OnInit {
 
         timeAxisX.call(xAxis);
 
-        const yAxis = d3
-          .axisLeft(this.yScale);
         const yAxisAngle = d3
           .axisLeft(this.yScaleAngle)
           .ticks(COUNT_OF_DEGREES_TICKS)
 
-        // distanceAxisY.call(yAxis);
         angleAxisY.call(yAxisAngle);
     }
 
@@ -184,18 +143,4 @@ export class SmoothSaccadeVerticalChartComponent implements OnInit {
           data.splice(0, indexValue + 1);
       }
     }
-
-    private computeLocationAxisX(startOfAxisX: number, minValue: number, maxValue: number): number {
-        const difference = maxValue - minValue;
-
-        const scaleFactor = difference !== 0
-          ? (this.height - this.margin * 2) / difference
-          : 0;
-
-        const offsetToBottom = maxValue - startOfAxisX;
-        const offsetToBottomWithFactor = offsetToBottom * scaleFactor;
-
-        return offsetToBottomWithFactor;
-    }
-
 }

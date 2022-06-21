@@ -1,12 +1,10 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
 import { ScaleLinear } from 'd3';
-import { FLASHING_STAGE } from 'src/app/saccade-memory-test/constants/movement-chart';
+import { FLASHING_STAGE } from 'src/app/saccade-memory-test/constants/constants';
 import { ILine } from 'src/app/saccade-memory-test/constants/types';
-import { ICamMessage, IChartData } from 'src/app/saccade-memory-test/models/charts.model';
-import { RequestService } from 'src/app/saccade-memory-test/services/request.service';
-import { SaccadesMergedChartService } from 'src/app/saccade-memory-test/services/saccadesMergedChartService';
-import { SharedService } from 'src/app/saccade-memory-test/services/shared.service';
+import { ICamMessage, IChartData } from 'src/app/models/charts.model';
+import { RequestService } from 'src/app/shared/requestService';
 import { LINE_COLOR } from './saccade-velocity-chart.constants';
 
 @Component({
@@ -14,8 +12,8 @@ import { LINE_COLOR } from './saccade-velocity-chart.constants';
   templateUrl: './saccade-velocity-chart.component.html',
   styleUrls: ['./saccade-velocity-chart.component.css']
 })
-export class SaccadeVelocityChartComponent implements OnInit {
-    @ViewChild('chart') private svgElement: ElementRef;
+export class SaccadeVelocityChartComponent {
+    @ViewChild('saccadeVelocityChart') private svgElement: ElementRef;
     @Input() public data: ICamMessage[];
     @Input() public width = 1250;
     @Input() public height = 500;
@@ -29,22 +27,15 @@ export class SaccadeVelocityChartComponent implements OnInit {
     private points: [number, number][] = [];
     private trialsCount: number;
 
-    constructor(private chartService: SaccadesMergedChartService, private requestService: RequestService,
-      private sharedService: SharedService) { }
-
-    ngOnInit() {
-        this.requestService.getMemoryData()
-          .subscribe(data => {
-              this.frames = this.sharedService.parseStringToJson(data) as ICamMessage[];
-              this.trialsCount = this.frames[this.frames.length - 1].trial + 1;
-        });
-    }
+    constructor() { }
 
     public buildRecordedChart(data: IChartData): void {
+        this.frames = data.framesData;
+        this.trialsCount = this.frames[this.frames.length - 1].trial + 1;
+
         if (d3.select('#velocityChartContent').empty()) {
             this.initializeChart(data.framesData);
         }
-        console.log(data)
         this.drawLineOnChart(data.framesData, { id: 'line', color: LINE_COLOR });
         this.drawTresholdDashedLine();
     }
@@ -92,8 +83,6 @@ export class SaccadeVelocityChartComponent implements OnInit {
         this.svgInner = this.svgInner
           .append('g')
           .attr('id', 'velocityChartPoints')
-
-        // this.width = this.svgElement.nativeElement.getBoundingClientRect().width;
 
         this.xScale.range([this.margin, this.width - 2 * this.margin]);
 

@@ -3,19 +3,6 @@
   <div class="col-2">
     <button type="button" class="btn btn-secondary" (click)="buildRecordedCharts()">Load test</button>
     <button type="button" class="btn btn-secondary d-block" (click)="clearCharts()">Clear test</button>
-
-    <div class="form-check d-inline-block ms-1">
-      <label class="form-check-label" for="flexCheckDefault">Show velocity data</label>
-      <input class="form-check-input" type="checkbox" value=""
-      id="flexCheckDefault" (change)="showVelocityOnMotionChart($event)"/>
-    </div>
-
-    <div class="form-check d-inline-block ms-1">
-      <label class="form-check-label" for="flexCheckDefault">Proportion</label>
-      <input class="form-check-input" type="checkbox" value=""
-      id="flexCheckDefault" (change)="showDashedLines($event)"/>
-    </div>
-
   </div>
 
   <div class="col-11">
@@ -23,7 +10,8 @@
     <app-smooth-saccade-vertical-chart #verticalMovementElement></app-smooth-saccade-vertical-chart>
     <app-smooth-saccade-horyzontal-chart #horizontalMovementElement></app-smooth-saccade-horyzontal-chart>
     <app-smooth-saccade-movement-chart #movementElement></app-smooth-saccade-movement-chart>
-    <app-smooth-saccade-velocity-chart #velocityElement></app-smooth-saccade-velocity-chart>
+    <app-smooth-saccade-velocity-chart #horizontalVelocityElement></app-smooth-saccade-velocity-chart>
+    <app-smooth-saccade-velocity-chart #verticalVelocityElement></app-smooth-saccade-velocity-chart>
   </div>
 
 </div>

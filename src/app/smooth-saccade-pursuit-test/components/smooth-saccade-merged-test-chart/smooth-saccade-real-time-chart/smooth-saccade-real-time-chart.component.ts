@@ -1,17 +1,16 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
 import { ScaleLinear } from 'd3';
-import { framesForUpdate, INDEX_DOT_FOR_CHECK } from 'src/app/saccade-memory-test/constants/real-time-chart';
 import { ILine } from 'src/app/saccade-memory-test/constants/types';
-import { ICamMessage } from 'src/app/saccade-memory-test/models/charts.model';
-import { RequestService } from 'src/app/saccade-memory-test/services/request.service';
-import { SharedService } from 'src/app/saccade-memory-test/services/shared.service';
-import { SmoothPursuitMergedChartServiceService } from 'src/app/smooth-saccade-pursuit-test/services/smoothPursuitMergedChartService.service';
+import { ICamMessage } from 'src/app/models/charts.model';
+import { RequestService } from 'src/app/shared/requestService';
+import { JsonService } from 'src/app/shared/jsonService';
+import { SmoothPursuitMergedChartServiceService } from 'src/app/smooth-saccade-pursuit-test/services/smoothPursuitMergedChartService';
 
 @Component({
   selector: 'app-smooth-saccade-real-time-chart',
   templateUrl: './smooth-saccade-real-time-chart.component.html',
-  styleUrls: ['./smooth-saccade-real-time-chart.component.css']
+  styleUrls: ['./smooth-saccade-real-time-chart.component.scss']
 })
 export class SmoothSaccadeRealTimeChartComponent implements OnInit {
     @ViewChild('chart') private svgElement: ElementRef<SVGElement>;
@@ -33,7 +32,7 @@ export class SmoothSaccadeRealTimeChartComponent implements OnInit {
     private readonly MIN_Y_SCALE_VALUE = 180;
 
     constructor(private chartService: SmoothPursuitMergedChartServiceService, private requestService: RequestService,
-      private sharedService: SharedService) { }
+      private sharedService: JsonService) { }
 
     ngOnInit() {
         this.requestService.getSmoothPursuitData()
@@ -47,49 +46,20 @@ export class SmoothSaccadeRealTimeChartComponent implements OnInit {
     public async buildRealTimeChart() {
         if (d3.select('#realTimeChartContent').empty()) {
             this.initializeChart();
+
             for (let i = 0; i < this.frames.length / 100; i++) {
                 await this.chartService.addData([ ...this.frames.splice(0, 100) ])
                     .then(initialFrames => {
-                        console.log(initialFrames)
                         this.drawPoints([ ...initialFrames ]);
-                        // this.tuneFramesCount(initialFrames);
                     });
             }
         }
-
-        // const interval = setInterval(() => {
-        //     this.frames.length !== 0
-        //     ? this.drawPointsByFramesAmount(framesForUpdate.framesPerBlock)
-        //     : this.hideChart(interval);
-        // }, framesForUpdate.millisecondsPerBlock);
+        this.hideChart();
     }
 
-    // clear chart
-    public clearChart() {
-        d3.select('#realTimeChartPoints').selectChildren().remove();
-        this.frames = [ ...this.initialFrames ];
-        this.lastPoint = [];
-        this.lastPointX = null;
-    }
-
-    private hideChart(interval) {
-        // clearInterval(interval);
+    private hideChart() {
         d3.select('#realTimeChart').remove();
     }
-
-    private tuneFramesCount(initialFrames: ICamMessage[]) {
-        initialFrames.forEach((frame, index) => {
-          if (index % INDEX_DOT_FOR_CHECK == 0 && index != 0)
-            initialFrames.splice(index - (INDEX_DOT_FOR_CHECK - 1), INDEX_DOT_FOR_CHECK);
-        });
-    }
-
-    // private drawPointsByFramesAmount(framesCount: number) {
-    //     this.chartService.addData(this.frames.splice(0, framesCount))
-    //       .then(frames => {
-    //           this.drawPoints([ ...frames ]);
-    //       });
-    // }
 
     private initializeChart(): void {
         this.svg = d3

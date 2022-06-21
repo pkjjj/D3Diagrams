@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { ParsingService } from "src/app/services/parsingService";
-import { ICamMessage } from "../models/charts.model";
+import { ICamMessage } from "../../models/charts.model";
 
 @Injectable()
 export class MemoryParsingService extends ParsingService {
