@@ -34,7 +34,7 @@ export class SmoothSaccadeMergedTestChartComponent implements OnInit, OnDestroy 
       private smoothParsingService: SmoothPursuitParsingServiceService) {}
 
     ngOnInit() {
-        this.subscriptions.push(this.requestService.getSmoothPursuitData()
+        this.subscriptions.push(this.requestService.getSmoothPursuitData_1()
           .subscribe(data => {
               this.frames = this.sharedService.parseStringToJson(data) as ICamMessage[];
         }));
@@ -48,14 +48,17 @@ export class SmoothSaccadeMergedTestChartComponent implements OnInit, OnDestroy 
         if (this.frames !== null) {
             const parsedFrames = this.smoothParsingService.parseFrames(this.frames);
 
-			this.velocityData = this.chartService.setCamData([ ...parsedFrames ]);
+			      this.velocityData = this.chartService.setCamData([ ...parsedFrames ]);
 
             const verticalFrames = this.smoothParsingService.removeHorizontalFrames([ ...parsedFrames ]);
             const horizontalFrames = this.smoothParsingService.removeVerticalFrames([ ...parsedFrames ]);
 
             const verticalChartData: IChartData = { framesData: verticalFrames };
             const horizontalChartData: IChartData = { framesData: horizontalFrames };
-            const movementChartData: IChartData = { framesData: [ ...parsedFrames ] };
+            const movementChartData: IChartData = { 
+              framesData: [ ...parsedFrames ], 
+              pursuitSaccadestestResults: this.velocityData.pursuitSaccadestestResults
+            };
 
             this.verticalVelocityChild.buildRecordedChart(this.velocityData.verticalVelocityFrames, this.velocityData.pursuitVerticalTestResults);
             this.horizontalVelocityChild.buildRecordedChart(this.velocityData.horizontalVelocityFrames, this.velocityData.pursuitHorizontalTestResults);

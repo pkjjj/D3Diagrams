@@ -33,11 +33,10 @@ export class SmoothSaccadeVelocityChartComponent implements OnInit {
     }
 
     public buildRecordedChart(data: ICamMessage[], testResults: ISaccadeResult[]): void {
-        console.log(data)
         this.initializeChart(data);
         this.drawLineOnChart(data, { id: 'line', color: LINE_COLOR });
         this.drawTresholdDashedLine();
-        this.drawTestResults([ ...data ], testResults);
+        // this.drawTestResults([ ...data ], testResults);
         this.drawProportionDashedLines([ ...data ]);
     }
 
@@ -159,33 +158,33 @@ export class SmoothSaccadeVelocityChartComponent implements OnInit {
         this.points = [];
     }
 
-    private drawTestResults(data: ICamMessage[], testResults: ISaccadeResult[]) {
-        for (let i = 0; i < testResults.length; i++) {
-            if (testResults[i].noResponse !== false) { break; }
+    // private drawTestResults(data: ICamMessage[], testResults: ISaccadeResult[]) {
+    //     for (let i = 0; i < testResults.length; i++) {
+    //         if (testResults[i].noResponse !== false) { continue; }
 
-            const saccadeStartIndex = data.findIndex(el => el.stimuliOS !== data[0].stimuliOS);
-            const saccadeEndIndex = data.slice(saccadeStartIndex).findIndex(el => el.stimuliOS !== data[saccadeStartIndex].stimuliOS);
-            let saccadeCenterIndex = Math.round((saccadeEndIndex - saccadeStartIndex) / 2);
+    //         const saccadeStartIndex = data.findIndex(el => el.stimuliOS !== data[0].stimuliOS);
+    //         const saccadeEndIndex = data.slice(saccadeStartIndex).findIndex(el => el.stimuliOS !== data[saccadeStartIndex].stimuliOS);
+    //         let saccadeCenterIndex = Math.abs(Math.round((saccadeEndIndex - saccadeStartIndex) / 2));
 
-            if (saccadeEndIndex === -1) {
-                saccadeCenterIndex = Math.round(((data.length - 1) - saccadeStartIndex) / 2);
-            }
-            const textLocation: [number, number] = [this.xScale(data[saccadeCenterIndex].pointX), -(this.height - this.margin - WHOLE_TEXT_OFFSET_Y)];
+    //         if (saccadeEndIndex === -1) {
+    //             saccadeCenterIndex = Math.round(((data.length - 1) - saccadeStartIndex) / 2);
+    //         }
+    //         const textLocation: [number, number] = [this.xScale(data[saccadeCenterIndex].pointX), -(this.height - this.margin - WHOLE_TEXT_OFFSET_Y)];
 
-            testResults[i].saccadesResults.forEach((saccade, index) => {
-                this.svgInner
-                    .append('text')
-                    .attr('x', textLocation[0])
-                    .attr('y', textLocation[1] - (TEXT_OFFSET_BY_Y + index * 10))
-                    .style('text-anchor', 'middle')
-                    .style('font-weight', 'bold')
-                    .style('font-size', '8px')
-                    .text(`S${index}L ${saccade.latency}ms Peak ${Math.trunc(saccade.peakVelocity)} A ${saccade.amplitude}`);
-            });
+    //         testResults[i].saccadesResults.forEach((saccade, index) => {
+    //             this.svgInner
+    //                 .append('text')
+    //                 .attr('x', textLocation[0])
+    //                 .attr('y', textLocation[1] - (TEXT_OFFSET_BY_Y + index * 10))
+    //                 .style('text-anchor', 'middle')
+    //                 .style('font-weight', 'bold')
+    //                 .style('font-size', '8px')
+    //                 .text(`S${index}L ${saccade.latency}ms Peak ${Math.trunc(saccade.peakVelocity)} A ${saccade.amplitude}`);
+    //         });
 
-            data.splice(0, saccadeEndIndex);
-        }
-    }
+    //         data.splice(0, saccadeEndIndex);
+    //     }
+    // }
 
     private drawProportionDashedLines(data: ICamMessage[]): void {
         while (data.length > 0) {

@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { ScaleLinear } from 'd3';
 import { COUNT_OF_DEGREES_TICKS } from 'src/app/saccade-memory-test/components/saccade-merged-test-chart/saccade-movement-chart/movement-chart.constants';
 import { ILine } from 'src/app/saccade-memory-test/constants/types';
-import { ICamMessage, IChartData } from 'src/app/models/charts.model';
+import { ICamMessage, IChartData, IRangeTestResult } from 'src/app/models/charts.model';
 import { FLASHING_STAGE } from 'src/app/saccade-memory-test/constants/constants';
 
 @Component({
@@ -18,6 +18,7 @@ export class SmoothSaccadeMovementChartComponent implements OnInit {
     @Input() public width = 1250;
     @Input() public height = 500;
     @Input() public margin = 50;
+    public testResults: IRangeTestResult[];
 
     private svg: d3.Selection<SVGElement, unknown, null, undefined>;
     private svgInner: d3.Selection<SVGElement, unknown, null, undefined>;
@@ -32,10 +33,12 @@ export class SmoothSaccadeMovementChartComponent implements OnInit {
 
     public buildRecordedChart(chartData: IChartData) {
         const parsedFrames = chartData.framesData;
+        this.testResults = chartData.pursuitSaccadestestResults;
 
         this.initializeChart(parsedFrames);
         this.drawVerticalPoints(parsedFrames);
         this.drawHorizontalPoints(parsedFrames);
+        // this.showTestResults(chartData.pursuitSaccadestestResults);
     }
 
     public showDashedLines(frames: ICamMessage[]): void {
@@ -152,17 +155,35 @@ export class SmoothSaccadeMovementChartComponent implements OnInit {
       }
     }
 
-    private computeLocationAxisX(startOfAxisX: number, minValue: number, maxValue: number): number {
-        const difference = maxValue - minValue;
+    private showTestResults(testResults: IRangeTestResult[]): void {
+        let offset = 0;
+        testResults.forEach((range, i) => {
+          if (i === 0) {
+            this.svgInner
+              .append('text')
+              .attr('x', 1000)
+              .attr('y', offset)
+              .style('text-anchor', 'middle')
+              .style('font-weight', 'bold')
+              .style('font-size', '10px')
+              .text(`Type    Latency    Peak Velocity    Accuracy    Result`);
+            offset += 20
+          }
+          range.saccadesTestResults.forEach((saccade, index) => {
+              this.svgInner
+                .append('text')
+                .attr('x', 1000)
+                .attr('y', offset)
+                .style('text-anchor', 'middle')
+                .style('font-weight', 'bold')
+                .style('font-size', '10px')
+                .text(`${saccade.type}    ${saccade.latency}ms    ${Math.trunc(saccade.peakVelocity)}    ${saccade.amplitude}`);
+              
+              offset += 20;
+          })
 
-        const scaleFactor = difference !== 0
-          ? (this.height - this.margin * 2) / difference
-          : 0;
-
-        const offsetToBottom = maxValue - startOfAxisX;
-        const offsetToBottomWithFactor = offsetToBottom * scaleFactor;
-
-        return offsetToBottomWithFactor;
+              
+        });
     }
 
 }

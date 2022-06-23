@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CHART_TYPE } from 'src/app/saccade-memory-test/constants/types';
-import { ICamMessage, IChartData, ISaccadeResult, SeparatedFrames } from 'src/app/models/charts.model';
+import { CHART_SUBTYPE, ICamMessage, IChartData, IRangeTestResult, ISaccadeResult, SeparatedFrames } from 'src/app/models/charts.model';
 import { MovementComputingService } from 'src/app/saccade-memory-test/services/computing/movementComputingService';
 import { MemoryParsingService } from 'src/app/saccade-memory-test/services/memoryParsingService';
 import { ChartService } from 'src/app/services/chartService';
@@ -43,15 +43,21 @@ export class SmoothPursuitMergedChartServiceService extends ChartService {
         const verticalArray = this.velocityService.computeVelocityData([ ...separatedFrames.verticalFrames ]);
         const horizontalArray = this.velocityService.computeVelocityData([ ...separatedFrames.horizontalFrames ]);
 
-        const verticalTestResults = this.saccadeAnalyticsService.computeTestResults([ ...verticalArray ]);
-        const horizontalTestResults = this.saccadeAnalyticsService.computeTestResults([ ...horizontalArray ]);
+        const verticalTestResults = this.saccadeAnalyticsService
+            .computeTestResults([ ...verticalArray ], CHART_SUBTYPE.VERTICAL);
+        const horizontalTestResults = this.saccadeAnalyticsService
+            .computeTestResults([ ...horizontalArray ], CHART_SUBTYPE.HORIZONTAL);
+
+        // Have order a value?
+        const testResults = verticalTestResults.concat(horizontalTestResults);
 
         const chartData: IChartData = {
             framesData: parsedFrames,
             verticalVelocityFrames: verticalArray,
             horizontalVelocityFrames: horizontalArray,
-            pursuitVerticalTestResults: verticalTestResults,
-            pursuitHorizontalTestResults: horizontalTestResults
+            // pursuitVerticalTestResults: verticalTestResults,
+            // pursuitHorizontalTestResults: horizontalTestResults,
+            pursuitSaccadestestResults: testResults
         };
 
         return chartData;

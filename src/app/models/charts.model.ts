@@ -121,6 +121,11 @@ export interface IChartData {
     verticalVelocityFrames?: ICamMessage[];
     pursuitVerticalTestResults?: ISaccadeResult[];
     pursuitHorizontalTestResults?: ISaccadeResult[];
+    // change in prod
+    pursuitSaccadestestResults?: IRangeTestResult[];
+    accept?: number;
+    errorPatient?: number;
+    errorSystem?: number;
 }
 
 export interface ITestResults {
@@ -132,14 +137,41 @@ export interface ITestResults {
     latencyArray: number[];
 }
 
-export interface ISaccadeResult {
+export interface IRangeTestResult {
     id?: number;
-    saccadesResults?: {
-        latency?: number;
-        peakVelocity?: number;
-        amplitude? : number;
-    }[];
-    noResponse?: boolean;
+    type?: CHART_SUBTYPE;
+    angle?: number;
+    accept?: number;
+    errorPatient?: number;
+    errorSystem?: number;
+    saccadesTestResults?: ISaccadeResult[];
+}
+
+export interface ISaccadeResult {
+    type?: RANGE_TYPE;
+    latency?: number;
+    peakVelocity?: number;
+    amplitude? : number;
+    result?: SACCADE_RESULT;
+}
+
+export enum SACCADE_RESULT {
+    ACCEPT = 'accept',
+    ERROR_PATIENT = 'error patient',
+    ERROR_SYSTEM = 'error system'
+}
+
+export enum CHART_SUBTYPE {
+    VERTICAL = 'Vertical',
+    HORIZONTAL = 'Horizontal'
+}
+
+export enum RANGE_TYPE {
+    DOWNWARDS = 'downwards',
+    UPWARDS = 'upwards',
+    LEFT_TO_RIGHT = 'left to right',
+    RIGHT_TO_LEFT = 'right to left',
+    AVERAGE = 'average'
 }
 
 export interface SeparatedFrames { horizontalFrames: ICamMessage[], verticalFrames: ICamMessage[] }

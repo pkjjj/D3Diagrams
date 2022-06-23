@@ -15,7 +15,7 @@ export class VelocityVerticalComputingService {
         this.secondCalibrationIndex = 0;
         this.velocityArray = [];
         this.computeFirstCalibrationRange(frames);
-
+        
         for (let index = 0; index < frames.length; index++) {
             if (index + COUNT_OF_SKIPPED < frames.length) {
                 if (this.secondCalibrationIndex === index) {
@@ -92,8 +92,11 @@ export class VelocityVerticalComputingService {
         secondCalibrationDot: ICamMessage, currentFrame: ICamMessage) {
         const ratio = (firstCalibrationDot.eyeOS - secondCalibrationDot.eyeOS)
             / (firstCalibrationDot.stimuliOS - secondCalibrationDot.stimuliOS);
-        const calibrationData = currentFrame.stimuliOS +
-            (firstCalibrationDot.eyeOS - currentFrame.eyeOS) / ratio;
+            
+        const calibrationData = ratio !== 0
+            ? currentFrame.stimuliOS +
+            (firstCalibrationDot.eyeOS - currentFrame.eyeOS) / ratio
+            : 0;    
 
         return calibrationData;
     }
@@ -101,7 +104,8 @@ export class VelocityVerticalComputingService {
     private computeFirstCalibrationRange(frames: ICamMessage[]) {
         for (let index = 0; index < frames.length; index++) {
             if (index === this.firstCalibrationIndex && index !== 0) {
-                frames.splice(0, index);
+                const slicedFrames = frames.splice(0, index);
+                this.resultFrames = this.resultFrames.concat(slicedFrames);
                 break;
             }
 

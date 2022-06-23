@@ -15,4 +15,8 @@ export class RequestService {
     public getSmoothPursuitData() {
         return this.httpClient.get('/assets/smooth-saccade-pursuit-test/16539163825057996.log', { responseType: 'text' });
     }
+
+    public getSmoothPursuitData_1() {
+        return this.httpClient.get('/assets/smooth-saccade-pursuit-test/16539164688916374.log', { responseType: 'text' });
+    }
 }
