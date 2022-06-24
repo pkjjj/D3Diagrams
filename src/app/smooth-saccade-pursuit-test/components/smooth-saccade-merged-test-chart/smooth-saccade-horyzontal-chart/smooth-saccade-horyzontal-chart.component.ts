@@ -18,9 +18,11 @@ export class SmoothSaccadeHoryzontalChartComponent implements OnInit {
     @Input() public height = 500;
     @Input() public margin = 50;
 
+    private calibratedFrames: ICamMessage[];
     private svg: d3.Selection<SVGElement, unknown, null, undefined>;
     private svgInner: d3.Selection<SVGElement, unknown, null, undefined>;
     private yScaleAngle: ScaleLinear<number, number, never>;
+    private yScale: ScaleLinear<number, number, never>;
     private xScale: ScaleLinear<number, number, never>;
     private trialsCount: number;
 
@@ -29,12 +31,14 @@ export class SmoothSaccadeHoryzontalChartComponent implements OnInit {
     ngOnInit() {
     }
 
-    // build recorded chart
     public buildRecordedChart(chartData: IChartData) {
         const parsedFrames = chartData.framesData;
+        this.calibratedFrames = chartData.movementFrames;
 
         this.initializeChart(parsedFrames);
-        this.drawPoints(parsedFrames);
+        this.drawRawMovementData(this.calibratedFrames);
+        this.drawGreenLines([ ...this.calibratedFrames ]);
+        this.drawCalibrationDots(this.calibratedFrames);
     }
 
     public showDashedLines(frames: ICamMessage[]): void {
@@ -53,9 +57,14 @@ export class SmoothSaccadeHoryzontalChartComponent implements OnInit {
           .attr('id', 'chartContent')
           .style('transform', 'translate(' + this.margin.toString() + 'px, ' + this.margin.toString() + 'px)');
 
+        this.yScale = d3
+          .scaleLinear()
+          .domain(d3.extent(this.calibratedFrames, f => f.eyeOSx).reverse())
+          .range([0, this.height - 2 * this.margin]);
+
         this.yScaleAngle = d3
           .scaleLinear()
-          .domain(d3.extent(data, f => f.stimuliOSx).reverse())
+          .domain(d3.extent(this.calibratedFrames, f => f.stimuliOSx).reverse())
           .range([0, this.height - 2 * this.margin]);
 
         const angleAxisY = this.svgInner
@@ -70,7 +79,7 @@ export class SmoothSaccadeHoryzontalChartComponent implements OnInit {
         const timeAxisX = this.svgInner
           .append('g')
           .attr('id', 'x-axis')
-          .style('transform', 'translate(0, ' + (this.height / 2 -this.margin).toString() + 'px)');
+          .style('transform', 'translate(0, ' + (this.height - 2 * this.margin).toString() + 'px)');
 
         this.svgInner = this.svgInner
           .append('g')
@@ -90,13 +99,13 @@ export class SmoothSaccadeHoryzontalChartComponent implements OnInit {
         angleAxisY.call(yAxisAngle);
     }
 
-    private drawPoints(data: ICamMessage[]): void {
+    private drawRawMovementData(data: ICamMessage[]): void {
         const points: [number, number][] = data.map(d => [
-          this.xScale(d.pointX),
-          this.yScaleAngle(d.stimuliOSx),
+            this.xScale(d.pointX),
+            this.yScale(d.eyeOSx),
         ]);
-
-        this.drawLineOnChart(points, { id: 'line', color: 'blue' });
+  
+        this.drawLineOnChart(points, { id: 'line', color: 'black' });
     }
 
     private drawLineOnChart(points: [number, number][],
@@ -114,6 +123,65 @@ export class SmoothSaccadeHoryzontalChartComponent implements OnInit {
           .style('fill', 'none')
           .style('stroke', lineStyle.color)
           .style('stroke-width', '2px');
+    }
+
+    private drawGreenLines(data: ICamMessage[]) {
+        while (data.length > 1) {
+            const startIndex = data.findIndex(f => f.calibrationGlintData);
+            const slicedFrames = data.slice(startIndex);
+            let endIndex = slicedFrames
+              .findIndex(f => f.calibrationGlintData?.calibationGlintData !== slicedFrames[0].calibrationGlintData?.calibationGlintData)
+              + startIndex;
+
+            if (endIndex < startIndex) {
+                endIndex = data.length - 1;
+            }
+
+            const greenLinePoints: [number, number][] = data
+              .slice(startIndex, endIndex)
+              .map(d => [
+                  this.xScale(d.pointX),
+                  this.yScale(d.calibrationGlintData.firstPointYOfTrial),
+              ]);
+
+            this.drawLineOnChart(greenLinePoints, { id: 'greenLine', color: 'green' });
+
+            data.splice(0, endIndex);
+        }
+    }
+
+    private drawCalibrationDots(data: ICamMessage[]) {
+        const radius = 5;
+
+        while (data.length > 1) {
+            const startIndex = data.findIndex(f => f.calibrationGlintData);
+            const slicedFrames = data.slice(startIndex);
+            let endIndex = slicedFrames
+              .findIndex(f => f.calibrationGlintData?.calibationGlintData !== slicedFrames[0].calibrationGlintData?.calibationGlintData)
+              + startIndex;
+
+            if (startIndex === -1) { break; }
+
+            if (endIndex < startIndex) {
+                endIndex = data.length - 1;
+            }
+
+            this.svgInner
+              .append('circle')
+              .attr('cx', this.xScale(data[startIndex].pointX))
+              .attr('cy', this.yScale(data[startIndex].eyeOSx))
+              .attr('r', radius)
+              .attr('fill', 'red');
+
+            this.svgInner
+              .append('circle')
+              .attr('cx', this.xScale(data[endIndex].pointX))
+              .attr('cy', this.yScale(data[endIndex].eyeOSx))
+              .attr('r', radius)
+              .attr('fill', 'red');
+
+            data.splice(0, endIndex);
+        }
     }
 
     private drawDashedLine(data: ICamMessage[]): void {

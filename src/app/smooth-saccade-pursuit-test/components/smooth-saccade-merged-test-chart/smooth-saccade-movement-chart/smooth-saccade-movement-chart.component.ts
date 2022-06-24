@@ -3,8 +3,13 @@ import * as d3 from 'd3';
 import { ScaleLinear } from 'd3';
 import { COUNT_OF_DEGREES_TICKS } from 'src/app/saccade-memory-test/components/saccade-merged-test-chart/saccade-movement-chart/movement-chart.constants';
 import { ILine } from 'src/app/saccade-memory-test/constants/types';
-import { ICamMessage, IChartData, IRangeTestResult } from 'src/app/models/charts.model';
+import { CHART_SUBTYPE, ICamMessage, IChartData, IPursuitSaccadeTestResults, IRangeTestResult, ISaccadeResult, RANGE_TYPE, SACCADE_RESULT } from 'src/app/models/charts.model';
 import { FLASHING_STAGE } from 'src/app/saccade-memory-test/constants/constants';
+
+export enum MOVEMENT_TYPE {
+    VERTICAL,
+    HORIZONTAL
+}
 
 @Component({
   selector: 'app-smooth-saccade-movement-chart',
@@ -18,13 +23,21 @@ export class SmoothSaccadeMovementChartComponent implements OnInit {
     @Input() public width = 1250;
     @Input() public height = 500;
     @Input() public margin = 50;
-    public testResults: IRangeTestResult[];
 
+    public testResults: IPursuitSaccadeTestResults;
+    private calibratedFrames: ICamMessage[];
     private svg: d3.Selection<SVGElement, unknown, null, undefined>;
     private svgInner: d3.Selection<SVGElement, unknown, null, undefined>;
     private yScaleAngle: ScaleLinear<number, number, never>;
+    private yScaleVertical: ScaleLinear<number, number, never>;
+    private yScaleHorizontal: ScaleLinear<number, number, never>;
+    private yScalePoint: number;
     private xScale: ScaleLinear<number, number, never>;
+    private lastPoint: [number, number];
     private trialsCount: number;
+    private counter = 0;
+    private verticalSaccadesResults: ISaccadeResult[] = [];
+    private horizontalSaccadesResults: ISaccadeResult[] = [];
 
     constructor() { }
 
@@ -33,12 +46,30 @@ export class SmoothSaccadeMovementChartComponent implements OnInit {
 
     public buildRecordedChart(chartData: IChartData) {
         const parsedFrames = chartData.framesData;
-        this.testResults = chartData.pursuitSaccadestestResults;
+        this.testResults = chartData.pursuitSaccadesTestResults;
+        this.calibratedFrames = chartData.movementFrames;
 
         this.initializeChart(parsedFrames);
-        this.drawVerticalPoints(parsedFrames);
-        this.drawHorizontalPoints(parsedFrames);
-        // this.showTestResults(chartData.pursuitSaccadestestResults);
+        this.drawVerticalMovementData([ ...chartData.separatedFrames.verticalFrames ]);
+        this.drawHorizontalMovementData([ ...chartData.separatedFrames.horizontalFrames ]);
+
+        this.drawGreenLines([ ...chartData.separatedFrames.verticalFrames ], MOVEMENT_TYPE.VERTICAL);
+        this.drawGreenLines([ ...chartData.separatedFrames.horizontalFrames ], MOVEMENT_TYPE.HORIZONTAL);
+
+        this.testResults.rangeTestResults.forEach(f => {
+            if (f.type === CHART_SUBTYPE.VERTICAL) {
+                this.verticalSaccadesResults = this.verticalSaccadesResults.concat(f.saccadesTestResults);
+            } 
+            else {
+                this.horizontalSaccadesResults = this.horizontalSaccadesResults.concat(f.saccadesTestResults);
+            }
+        })
+        this.drawRedCircles([ ...chartData.separatedFrames.verticalFrames ],
+           this.verticalSaccadesResults, 
+           MOVEMENT_TYPE.VERTICAL);
+        this.drawRedCircles([ ...chartData.separatedFrames.horizontalFrames ], 
+          this.horizontalSaccadesResults, 
+          MOVEMENT_TYPE.HORIZONTAL);
     }
 
     public showDashedLines(frames: ICamMessage[]): void {
@@ -57,9 +88,19 @@ export class SmoothSaccadeMovementChartComponent implements OnInit {
           .attr('id', 'chartContent')
           .style('transform', 'translate(' + this.margin.toString() + 'px, ' + this.margin.toString() + 'px)');
 
+        this.yScaleVertical = d3
+          .scaleLinear()
+          .domain(d3.extent(this.calibratedFrames, f => f.eyeOSy).reverse())
+          .range([0, this.height - 2 * this.margin]);
+
+        this.yScaleHorizontal = d3
+          .scaleLinear()
+          .domain(d3.extent(this.calibratedFrames, f => f.eyeOSx).reverse())
+          .range([0, this.height - 2 * this.margin]);
+
         this.yScaleAngle = d3
           .scaleLinear()
-          .domain(d3.extent(data, f => f.stimuliOSx).reverse())
+          .domain(d3.extent(this.calibratedFrames, f => f.stimuliOS).reverse())
           .range([0, this.height - 2 * this.margin]);
 
         const angleAxisY = this.svgInner
@@ -74,7 +115,7 @@ export class SmoothSaccadeMovementChartComponent implements OnInit {
         const timeAxisX = this.svgInner
           .append('g')
           .attr('id', 'x-axis')
-          .style('transform', 'translate(0, ' + (this.height / 2 -this.margin).toString() + 'px)');
+          .style('transform', 'translate(0, ' + (this.height - 2 * this.margin).toString() + 'px)');
 
         this.svgInner = this.svgInner
           .append('g')
@@ -94,22 +135,26 @@ export class SmoothSaccadeMovementChartComponent implements OnInit {
         angleAxisY.call(yAxisAngle);
     }
 
-    private drawVerticalPoints(data: ICamMessage[]): void {
+    private drawVerticalMovementData(data: ICamMessage[]): void {
         const points: [number, number][] = data.map(d => [
-          this.xScale(d.pointX),
-          this.yScaleAngle(d.stimuliOSy),
+            this.xScale(d.pointX),
+            this.yScaleVertical(d.eyeOSy),
         ]);
 
-        this.drawLineOnChart(points, { id: 'line', color: '#bed869' });
+        this.lastPoint = points[points.length - 1];
+
+        this.drawLineOnChart(points, { id: 'line', color: 'black' });
     }
 
-    private drawHorizontalPoints(data: ICamMessage[]): void {
+    private drawHorizontalMovementData(data: ICamMessage[]): void {
         const points: [number, number][] = data.map(d => [
-          this.xScale(d.pointX),
-          this.yScaleAngle(d.stimuliOSx),
+            this.xScale(d.pointX),
+            this.yScaleHorizontal(d.eyeOSx),
         ]);
 
-        this.drawLineOnChart(points, { id: 'line', color: 'blue' });
+        points.unshift(this.lastPoint);
+  
+        this.drawLineOnChart(points, { id: 'line', color: 'black' });
     }
 
     private drawLineOnChart(points: [number, number][],
@@ -127,6 +172,95 @@ export class SmoothSaccadeMovementChartComponent implements OnInit {
           .style('fill', 'none')
           .style('stroke', lineStyle.color)
           .style('stroke-width', '2px');
+    }
+
+    private drawGreenLines(data: ICamMessage[], type: MOVEMENT_TYPE) {
+        while (data.length > 1) {
+            const startIndex = data.findIndex(f => f.calibrationGlintData);
+            const slicedFrames = data.slice(startIndex);
+            let endIndex = slicedFrames
+              .findIndex(f => f.calibrationGlintData?.calibationGlintData !== slicedFrames[0].calibrationGlintData?.calibationGlintData)
+              + startIndex;
+
+            if (endIndex < startIndex) {
+                endIndex = data.length - 1;
+            }
+
+            const greenLinePoints: [number, number][] = data
+              .slice(startIndex, endIndex)
+              .map(d => [
+                  this.xScale(d.pointX),
+                  type === MOVEMENT_TYPE.VERTICAL
+                    ? this.yScaleVertical(d.calibrationGlintData.firstPointYOfTrial)
+                    : this.yScaleHorizontal(d.calibrationGlintData.firstPointYOfTrial)
+              ]);
+
+            this.drawLineOnChart(greenLinePoints, { id: 'greenLine', color: 'green' });
+
+            data.splice(0, endIndex);
+        }
+    }
+
+    private drawRedCircles(data: ICamMessage[], testResults: ISaccadeResult[], type: MOVEMENT_TYPE) {
+        const radius = 5;
+
+        testResults = testResults.filter(f => f.type !== RANGE_TYPE.AVERAGE);
+
+        while (data.length > 1) {
+            const startIndex = data.findIndex(f => f.calibrationGlintData);
+            const slicedFrames = data.slice(startIndex);
+            let endIndex = slicedFrames
+              .findIndex(f => f.calibrationGlintData?.calibationGlintData !== slicedFrames[0].calibrationGlintData?.calibationGlintData)
+              + startIndex;
+
+            if (startIndex === -1) { break; }
+
+            if (endIndex < startIndex) {
+                endIndex = data.length - 1;
+            }
+
+            this.yScalePoint = type === MOVEMENT_TYPE.VERTICAL
+              ? this.yScaleVertical(data[startIndex].eyeOSy)
+              : this.yScaleHorizontal(data[startIndex].eyeOSx);
+
+            this.svgInner
+              .append('circle')
+              .attr('cx', this.xScale(data[startIndex].pointX))
+              .attr('cy', this.yScalePoint)
+              .attr('r', radius)
+              .attr('fill', 'red');
+
+            this.yScalePoint = type === MOVEMENT_TYPE.VERTICAL
+              ? this.yScaleVertical(data[endIndex].eyeOSy)
+              : this.yScaleHorizontal(data[endIndex].eyeOSx);
+
+            this.svgInner
+              .append('circle')
+              .attr('cx', this.xScale(data[endIndex].pointX))
+              .attr('cy', this.yScalePoint)
+              .attr('r', radius)
+              .attr('fill', 'red');
+
+            const index = this.counter;
+
+            const result = testResults[index].result === SACCADE_RESULT.ACCEPT
+              ? `L ${testResults[index].latency}ms \n A ${testResults[index].amplitude}%`
+              : `${testResults[index].result}`;
+
+            this.svgInner
+              .append('text')
+              .attr('x', this.xScale(data[startIndex + 1].pointX))
+              .attr('y', this.yScalePoint - 10)
+              .style('text-anchor', 'middle')
+              .style('font-weight', 'bold')
+              .style('font-size', '10px')
+              .text(result);
+
+            data.splice(0, endIndex);
+
+            this.counter++;
+        }
+        this.counter = 0;
     }
 
     private drawDashedLine(data: ICamMessage[]): void {
@@ -154,36 +288,4 @@ export class SmoothSaccadeMovementChartComponent implements OnInit {
           data.splice(0, indexValue + 1);
       }
     }
-
-    private showTestResults(testResults: IRangeTestResult[]): void {
-        let offset = 0;
-        testResults.forEach((range, i) => {
-          if (i === 0) {
-            this.svgInner
-              .append('text')
-              .attr('x', 1000)
-              .attr('y', offset)
-              .style('text-anchor', 'middle')
-              .style('font-weight', 'bold')
-              .style('font-size', '10px')
-              .text(`Type    Latency    Peak Velocity    Accuracy    Result`);
-            offset += 20
-          }
-          range.saccadesTestResults.forEach((saccade, index) => {
-              this.svgInner
-                .append('text')
-                .attr('x', 1000)
-                .attr('y', offset)
-                .style('text-anchor', 'middle')
-                .style('font-weight', 'bold')
-                .style('font-size', '10px')
-                .text(`${saccade.type}    ${saccade.latency}ms    ${Math.trunc(saccade.peakVelocity)}    ${saccade.amplitude}`);
-              
-              offset += 20;
-          })
-
-              
-        });
-    }
-
 }

@@ -117,15 +117,22 @@ export interface IChartData {
     calibrationData?: ICalibrationMovementChartData;
     testResults?: ITestResults;
     framesData?: ICamMessage[];
+    movementFrames?: ICamMessage[];
+    separatedFrames?: SeparatedFrames;
     horizontalVelocityFrames?: ICamMessage[];
     verticalVelocityFrames?: ICamMessage[];
-    pursuitVerticalTestResults?: ISaccadeResult[];
-    pursuitHorizontalTestResults?: ISaccadeResult[];
     // change in prod
-    pursuitSaccadestestResults?: IRangeTestResult[];
+    pursuitSaccadesTestResults?: IPursuitSaccadeTestResults;
     accept?: number;
     errorPatient?: number;
     errorSystem?: number;
+}
+
+export interface IPursuitSaccadeTestResults {
+    accept?: number;
+    errorPatient?: number;
+    errorSystem?: number;
+    rangeTestResults?: IRangeTestResult[];
 }
 
 export interface ITestResults {
@@ -158,7 +165,8 @@ export interface ISaccadeResult {
 export enum SACCADE_RESULT {
     ACCEPT = 'accept',
     ERROR_PATIENT = 'error patient',
-    ERROR_SYSTEM = 'error system'
+    ERROR_SYSTEM = 'error system',
+    NO_RESULT = 'no result'
 }
 
 export enum CHART_SUBTYPE {
@@ -167,11 +175,11 @@ export enum CHART_SUBTYPE {
 }
 
 export enum RANGE_TYPE {
-    DOWNWARDS = 'downwards',
-    UPWARDS = 'upwards',
-    LEFT_TO_RIGHT = 'left to right',
-    RIGHT_TO_LEFT = 'right to left',
-    AVERAGE = 'average'
+    DOWNWARDS = 'Downwards',
+    UPWARDS = 'Upwards',
+    LEFT_TO_RIGHT = 'Left to right',
+    RIGHT_TO_LEFT = 'Right to left',
+    AVERAGE = 'Average'
 }
 
 export interface SeparatedFrames { horizontalFrames: ICamMessage[], verticalFrames: ICamMessage[] }

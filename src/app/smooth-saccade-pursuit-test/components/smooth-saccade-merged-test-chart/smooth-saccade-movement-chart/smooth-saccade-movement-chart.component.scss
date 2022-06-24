@@ -1,8 +1,7 @@
-th, td {
+td {
     width: 12em;
     min-width: 12em;
     max-width: 12em;
-    padding: 10px;
 }
 
 td:first-child {
@@ -18,4 +17,8 @@ td:first-child {
 
 .bold-text {
     font-weight: bold;
+}
+
+.pd-10 {
+    padding: 15px;
 }

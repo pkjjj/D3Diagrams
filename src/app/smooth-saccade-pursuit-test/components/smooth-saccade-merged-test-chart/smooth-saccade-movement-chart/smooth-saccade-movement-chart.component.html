@@ -1,45 +1,62 @@
 <h1>Movement chart</h1>
 <svg #chart></svg>
-<div class="frame">
-    <table *ngFor="let range of testResults; let i = index" class="range-table">
-        
+<div *ngIf="testResults" class="frame">
+    <table *ngFor="let range of testResults.rangeTestResults; let i = index" class="range-table">
         <tbody>
             <td>
                 {{range.type}}
                 {{range.angle}}
             </td>
-            <td>
+            <td class="pd-10">
                 <table>
                     <thead *ngIf="i === 0" class="bold-text">
                         <th>TYPE</th>
                         <th>Latency</th>
                         <th>Peak velocity</th>
                         <th>Accuracy</th>
-                        <th>Result</th>
+                        <th>
+                            <table>
+                                <tr>
+                                    <td>Accept</td>
+                                    <td>{{testResults.accept}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Error Patient</td>
+                                    <td>{{testResults.errorPatient}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Error System</td>
+                                    <td>{{testResults.errorSystem}}</td>
+                                </tr>
+                            </table>
+                        </th>
                     </thead>
-                    <tr class="bold-text">
-                        Accept {{range.accept}}
-                        <br>
-                        Error patient {{range.errorPatient}}
-                        <br>
-                        Error system {{range.errorSystem}}
-                    </tr>
                     <tr *ngFor="let saccade of range.saccadesTestResults">
-                        <ng-container *ngIf="saccade.result == 'accept'; else error">
+                        
+                        <ng-container *ngIf="saccade.result === 'accept'">
                             <td>{{saccade.type}}</td>
                             <td>{{saccade.latency}}</td>
                             <td>{{saccade.peakVelocity | number : '1.0-0'}}</td>
                             <td>{{saccade.amplitude}}</td>
-                            <td>{{saccade.result}}</td>
+                            <td class="bold-text">{{saccade.result}}</td>
+                        </ng-container>
+
+                        <ng-container *ngIf="saccade.type === 'Average'">
+                            <td class="bold-text">{{saccade.type}}</td>
+                            <td class="bold-text">{{saccade.latency}}</td>
+                            <td class="bold-text">{{saccade.peakVelocity | number : '1.0-0'}}</td>
+                            <td class="bold-text">{{saccade.amplitude}}</td>
+                            <td class="bold-text">{{saccade.result}}</td>
                         </ng-container>
                         
-                        <ng-template #error>
-                            <td>{{saccade.type}}</td>
+                        <ng-container *ngIf="saccade.result === 'error patient' || saccade.result === 'error system'">
                             <td>{{saccade.result}}</td>
                             <td>{{saccade.result}}</td>
                             <td>{{saccade.result}}</td>
                             <td>{{saccade.result}}</td>
-                        </ng-template>
+                            <td class="bold-text">{{saccade.result}}</td>
+                        </ng-container>
+
                     </tr>
                 </table>
             </td>

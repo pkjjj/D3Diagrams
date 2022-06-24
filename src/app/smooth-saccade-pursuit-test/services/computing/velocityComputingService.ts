@@ -52,7 +52,7 @@ export class VelocityVerticalComputingService {
                 frames[index].calibrationAngleOS = calibrationAngle;
 
                 if (this.secondCalibrationIndex === index) {
-                    const slicedFrames = frames.splice(0, index);
+                    const slicedFrames = frames.splice(0, index + 1);
                     this.resultFrames = this.resultFrames.concat(slicedFrames);
                 }
                 this.velocityArray.push(0);

@@ -10,6 +10,8 @@ import { SmoothSaccadeHoryzontalChartComponent } from './smooth-saccade-horyzont
 import { SmoothSaccadeMovementChartComponent } from './smooth-saccade-movement-chart/smooth-saccade-movement-chart.component';
 import { SmoothSaccadeVelocityChartComponent } from './smooth-saccade-velocity-chart/smooth-saccade-velocity-chart.component';
 import { SmoothSaccadeVerticalChartComponent } from './smooth-saccade-vertical-chart/smooth-saccade-vertical-chart.component';
+import { VelocityVerticalComputingService } from '../../services/computing/velocityComputingService';
+import { VelocitySaccadeAnalyticsService } from '../../services/computing/velocitySaccadeAnalyticsService';
 
 @Component({
   selector: 'app-smooth-saccade-merged-test-chart',
@@ -26,15 +28,17 @@ export class SmoothSaccadeMergedTestChartComponent implements OnInit, OnDestroy 
     public testResults: ITestResults;
     private subscriptions: Subscription[] = [];
     private frames: ICamMessage[];
-    private velocityData: IChartData;
+    private chartData: IChartData;
     private clonedFrames: ICamMessage[];
 
     constructor(private chartService: SmoothPursuitMergedChartServiceService, private requestService: RequestService,
       private sharedService: JsonService,
-      private smoothParsingService: SmoothPursuitParsingServiceService) {}
+      private smoothParsingService: SmoothPursuitParsingServiceService,
+      private computingService: VelocityVerticalComputingService,
+      private saccadeAnalyticsService: VelocitySaccadeAnalyticsService) {}
 
     ngOnInit() {
-        this.subscriptions.push(this.requestService.getSmoothPursuitData_1()
+        this.subscriptions.push(this.requestService.getSmoothPursuitData()
           .subscribe(data => {
               this.frames = this.sharedService.parseStringToJson(data) as ICamMessage[];
         }));
@@ -46,30 +50,41 @@ export class SmoothSaccadeMergedTestChartComponent implements OnInit, OnDestroy 
 
     public buildRecordedCharts(): void {
         if (this.frames !== null) {
-            const parsedFrames = this.smoothParsingService.parseFrames(this.frames);
+          const parsedFrames = this.smoothParsingService.parseFrames(this.frames);
 
-			      this.velocityData = this.chartService.setCamData([ ...parsedFrames ]);
+          this.chartData = this.chartService.setCamData([ ...parsedFrames ]);
 
-            const verticalFrames = this.smoothParsingService.removeHorizontalFrames([ ...parsedFrames ]);
-            const horizontalFrames = this.smoothParsingService.removeVerticalFrames([ ...parsedFrames ]);
+          const movementFrames = this.smoothParsingService.removeZeroElements([ ...parsedFrames ]);
 
-            const verticalChartData: IChartData = { framesData: verticalFrames };
-            const horizontalChartData: IChartData = { framesData: horizontalFrames };
-            const movementChartData: IChartData = { 
-              framesData: [ ...parsedFrames ], 
-              pursuitSaccadestestResults: this.velocityData.pursuitSaccadestestResults
-            };
+          const verticalFrames = this.smoothParsingService.removeHorizontalFrames([ ...parsedFrames ]);
+          const horizontalFrames = this.smoothParsingService.removeVerticalFrames([ ...parsedFrames ]);
 
-            this.verticalVelocityChild.buildRecordedChart(this.velocityData.verticalVelocityFrames, this.velocityData.pursuitVerticalTestResults);
-            this.horizontalVelocityChild.buildRecordedChart(this.velocityData.horizontalVelocityFrames, this.velocityData.pursuitHorizontalTestResults);
-            this.verticalMovementChild.buildRecordedChart(verticalChartData);
-            this.horizontalMovementChild.buildRecordedChart(horizontalChartData);
-            this.movementChild.buildRecordedChart(movementChartData);
+          const calibrationVerticalFrames = this.smoothParsingService.removeHorizontalFrames([ ...movementFrames ]);
+          const calibrationHorizontalFrames = this.smoothParsingService.removeVerticalFrames([ ...movementFrames ]);
+
+          const calibratedVerticalFrames = this.saccadeAnalyticsService.computeFramesByCalibrationData([ ...calibrationVerticalFrames ]);
+          const calibratedHorizontalFrames = this.saccadeAnalyticsService.computeFramesByCalibrationData([ ...calibrationHorizontalFrames ]);
+          const calibratedFrames = this.saccadeAnalyticsService.computeFramesByCalibrationData([ ...movementFrames ]);
+
+          const verticalChartData: IChartData = { framesData: verticalFrames, movementFrames: calibratedVerticalFrames };
+          const horizontalChartData: IChartData = { framesData: horizontalFrames, movementFrames: calibratedHorizontalFrames };
+          const movementChartData: IChartData = { 
+              framesData: [ ...parsedFrames ],
+              movementFrames:  calibratedFrames,
+              separatedFrames: { verticalFrames: [ ...calibratedVerticalFrames], horizontalFrames: [ ...calibratedHorizontalFrames] },
+              pursuitSaccadesTestResults: this.chartData.pursuitSaccadesTestResults
+          };
+
+          this.verticalVelocityChild.buildRecordedChart(this.chartData.verticalVelocityFrames);
+          this.horizontalVelocityChild.buildRecordedChart(this.chartData.horizontalVelocityFrames);
+          this.verticalMovementChild.buildRecordedChart(verticalChartData);
+          this.horizontalMovementChild.buildRecordedChart(horizontalChartData);
+          this.movementChild.buildRecordedChart(movementChartData);
         }
     }
 
     public clearCharts(): void {
-		this.chartService.clearData();
-		this.testResults = null;
+        this.chartService.clearData();
+        this.testResults = null;
     }
 }

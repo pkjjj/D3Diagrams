@@ -32,7 +32,7 @@ export class SmoothSaccadeVelocityChartComponent implements OnInit {
     ngOnInit() {
     }
 
-    public buildRecordedChart(data: ICamMessage[], testResults: ISaccadeResult[]): void {
+    public buildRecordedChart(data: ICamMessage[]): void {
         this.initializeChart(data);
         this.drawLineOnChart(data, { id: 'line', color: LINE_COLOR });
         this.drawTresholdDashedLine();
