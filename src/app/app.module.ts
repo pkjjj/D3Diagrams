@@ -26,6 +26,7 @@ import { VelocityComputingService } from './saccade-memory-test/services/computi
 import { VelocityVerticalComputingService } from './smooth-saccade-pursuit-test/services/computing/velocityComputingService';
 import { VelocitySaccadeAnalyticsService } from './smooth-saccade-pursuit-test/services/computing/velocitySaccadeAnalyticsService';
 import { JsonService } from './shared/jsonService';
+import { PursuitFFTComponent } from './smooth-saccade-pursuit-test/components/smooth-saccade-merged-test-chart/pursuit-fft/pursuit-fft.component';
 
 @NgModule({
   declarations: [
@@ -40,7 +41,8 @@ import { JsonService } from './shared/jsonService';
     SmoothSaccadeVelocityChartComponent,
     SmoothSaccadeHoryzontalChartComponent,
     SmoothSaccadeVerticalChartComponent,
-    SmoothSaccadeRealTimeChartComponent
+    SmoothSaccadeRealTimeChartComponent,
+    PursuitFFTComponent
   ],
   imports: [
     BrowserModule,

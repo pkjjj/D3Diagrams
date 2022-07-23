@@ -17,7 +17,7 @@ const VELOCITY_TRESHOLD = 30;
 export class SmoothSaccadeVelocityChartComponent implements OnInit {
     @ViewChild('chart') private svgElement: ElementRef;
     @Input() public data: ICamMessage[];
-    @Input() public width = 1400;
+    @Input() public width = 1250;
     @Input() public height = 500;
     @Input() public margin = 50;
 

@@ -39,16 +39,17 @@ export class SmoothPursuitMergedChartServiceService extends ChartService {
         const outputFrames = this.smoothParsingService.removeZeroElements([ ...parsedFrames ]);
 
         const separatedTestResultsFrames = this.smoothParsingService.separateFrames([ ...parsedFrames ]);
-        const separatedFrames = this.smoothParsingService.separateFrames([ ...outputFrames ]);
 
-        this.smoothParsingService.tuneVerticalFrames(separatedFrames);
-        this.smoothParsingService.tuneHorizontalFrames(separatedFrames);
+        const verticalFrames = this.smoothParsingService.removeHorizontalFrames([ ...outputFrames ]);
+        const horizontalFrames = this.smoothParsingService.removeVerticalFrames([ ...outputFrames ]);
 
-        this.smoothParsingService.tuneVerticalFrames(separatedTestResultsFrames);
-        this.smoothParsingService.tuneHorizontalFrames(separatedTestResultsFrames);
+        this.smoothParsingService.tuneVerticalFrames(verticalFrames);
+        this.smoothParsingService.tuneHorizontalFrames(horizontalFrames);
 
-        const verticalArray = this.velocityService.computeVelocityData([ ...separatedFrames.verticalFrames ]);
-        const horizontalArray = this.velocityService.computeVelocityData([ ...separatedFrames.horizontalFrames ]);
+        this.smoothParsingService.tuneVerticalFrames(separatedTestResultsFrames.verticalFrames);
+        this.smoothParsingService.tuneHorizontalFrames(separatedTestResultsFrames.horizontalFrames);
+        const verticalArray = this.velocityService.computeVelocityData([ ...verticalFrames ]);
+        const horizontalArray = this.velocityService.computeVelocityData([ ...horizontalFrames ]);
 
         const verticalTestFrames = this.velocityService
             .computeVelocityData([ ...separatedTestResultsFrames.verticalFrames ]);

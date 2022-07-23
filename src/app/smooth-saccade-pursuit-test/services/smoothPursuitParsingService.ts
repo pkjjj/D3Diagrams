@@ -37,15 +37,15 @@ export class SmoothPursuitParsingServiceService extends ParsingService {
         return separatedFrames;
     }
 
-    public tuneHorizontalFrames(separatedFrames: SeparatedFrames) {
-        separatedFrames.horizontalFrames.forEach(frame => {
+    public tuneHorizontalFrames(horizontalFrames: ICamMessage[]) {
+        horizontalFrames.forEach(frame => {
             frame.stimuliOS = frame.stimuliOSx;
             frame.eyeOS = frame.eyeOSx;
         });
     }
 
-    public tuneVerticalFrames(separatedFrames: SeparatedFrames) {
-        separatedFrames.verticalFrames.forEach(frame => {
+    public tuneVerticalFrames(verticalFrames: ICamMessage[]) {
+        verticalFrames.forEach(frame => {
             frame.stimuliOS = frame.stimuliOSy;
             frame.eyeOS = frame.eyeOSy;
         });

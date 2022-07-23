@@ -90,6 +90,7 @@ export class VelocityVerticalComputingService {
 
     private computeHorizontalCalibrationData(firstCalibrationDot: ICamMessage,
         secondCalibrationDot: ICamMessage, currentFrame: ICamMessage) {
+            // console.log(firstCalibrationDot, secondCalibrationDot);
         const ratio = (firstCalibrationDot.eyeOS - secondCalibrationDot.eyeOS)
             / (firstCalibrationDot.stimuliOS - secondCalibrationDot.stimuliOS);
             
@@ -110,6 +111,7 @@ export class VelocityVerticalComputingService {
             }
 
             this.firstCalibrationIndex = this.getFirstCalibrationIndex(frames[index], frames) - 1;
+            if (this.firstCalibrationIndex < 0) { break; }
             this.secondCalibrationIndex = this.getSecondCalibrationIndex(frames, this.firstCalibrationIndex + 1)
                 + this.firstCalibrationIndex;
 
